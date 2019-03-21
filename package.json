@@ -1,0 +1,29 @@
+{
+  "name": "week7a",
+  "version": "1.0.0",
+  "description": "week7a",
+  "main": "server.js",
+  "scripts": {
+    "test": "mocha --timeout 10000 --exit"
+  },
+  "author": "Gavin Atkin, Erik Nelson, Tamila Husnetdinova",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "jsonwebtoken": "^8.1.1",
+    "mongoose": "^5.0.9",
+    "passport": "^0.4.0",
+    "passport-http": "^0.3.0",
+    "passport-jwt": "^3.0.1"
+  },
+  "devDependencies": {
+    "dotenv": "^6.2.0",
+    "mocha": "^5.2.0",
+    "chai": "^4.2.0",
+    "chai-http": "^4.2.0",
+    "sinon": "^7.2.2",
+    "sinon-mongoose": "^2.2.1"
+  }
+}

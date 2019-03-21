@@ -5,3 +5,4 @@
 #### Share 256 by 256 square pixel images with a character limit of 256.
 #### Like, follow, and discover other artists and content creators.
 #### Only your latest post is saved for longer than 7 days.
+#### Up to 5 hashtags per post.

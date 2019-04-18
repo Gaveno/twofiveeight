@@ -4,6 +4,12 @@ var passport = require('passport');
 var authJwtController = require('./auth_jwt');
 var User = require('./Users');
 var jwt = require('jsonwebtoken');
+var Posts = require('./Posts');
+var Comments = require('./Comments');
+var Followers = require('./Followers');
+var Feed = require('./Feed');
+var Discover = require("./Discover");
+var Follow = require("./Follow");
 
 var app = express();
 module.exports = app; // for testing
@@ -118,6 +124,31 @@ router.route('/signin')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
+//POSTS REQUESTS HERE
+router.route('/posts')
+    //POST
+
+//COMMENTS REQUESTS HERE
+router.route('/comments')
+    //GET
+    //POST
+
+//FOLLOWERS REQUESTS HERE
+router.route('/followers')
+    //GET
+    //POST
+
+//FEED REQUESTS HERE
+router.route('/feed')
+    //GET
+
+//DISCOVER REQUESTS HERE
+router.route('/discover')
+    //GET
+
+//FOLLOW REQUESTS HERE
+router.route('/follow')
+//POST
 
 router.route('/')
     .all(function (req, res) {

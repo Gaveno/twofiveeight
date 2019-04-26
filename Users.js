@@ -9,8 +9,10 @@ mongoose.set('useCreateIndex', true);
 
 // user schema
 var UserSchema = new Schema({
-    name: String,
     username: { type: String, required: true, index: { unique: true }},
+    about: { type: String },
+    lastName: { type: String },
+    firstName: { type: String },
     password: { type: String, required: true, select: false }
 });
 

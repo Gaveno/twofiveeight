@@ -7,19 +7,16 @@ mongoose.Promise = global.Promise;
 mongoose.connect(process.env.DB, { useNewUrlParser: true } );
 mongoose.set('useCreateIndex', true);
 
-// comments schema
-var CommentsSchema = new Schema({
-    user: {type: Schema.Types.ObjectId, ref: "UserSchema", required: true},
-    comment: {type: string, required: false }
-
-    //not sure how to go on the required: parameter
-    //if comment exists, then so should username of the person who made the comment
-    //but users aren't required to post a comment, so that should be optional
+// user schema
+var CommentSchema = new Schema({
+    user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true }, //Comment creator
+    text: { type: String, required: true },
+    createdAt: { type: Date, expires: 604800, default: Date.now }
 });
 
-CommentsSchema.pre('save', function(next) {
+CommentSchema.pre('save', function(next) {
     next();
 });
 
 // return the model
-module.exports = mongoose.model('Comments', CommentsSchema);
+module.exports = mongoose.model('Comment', CommentSchema);

@@ -1,13 +1,13 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
-var cors = require('cors');
+//var cors = require('cors');
 var authJwtController = require('./auth_jwt');
 var User = require('./Users');
 var jwt = require('jsonwebtoken');
 var Posts = require('./Posts');
 var Comments = require('./Comments');
-var Followers = require('./Followers');
+//var Followers = require('./Followers');
 
 var app = express();
 module.exports = app; // for testing
@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(passport.initialize());
-app.use(cors());
+//app.use(cors());
 
 var router = express.Router();
 

@@ -7,9 +7,6 @@ var jwt = require('jsonwebtoken');
 var Posts = require('./Posts');
 var Comments = require('./Comments');
 var Followers = require('./Followers');
-var Feed = require('./Feed');
-var Discover = require("./Discover");
-var Follow = require("./Follow");
 
 var app = express();
 module.exports = app; // for testing
@@ -135,19 +132,6 @@ router.route('/comments')
 
 //FOLLOWERS REQUESTS HERE
 router.route('/followers')
-    //GET
-    //POST
-
-//FEED REQUESTS HERE
-router.route('/feed')
-    //GET
-
-//DISCOVER REQUESTS HERE
-router.route('/discover')
-    //GET
-
-//FOLLOW REQUESTS HERE
-router.route('/follow')
 //POST
 
 router.route('/')

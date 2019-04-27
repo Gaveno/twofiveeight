@@ -13,7 +13,7 @@ var UserSchema = new Schema({
     about: { type: String },
     lastName: { type: String },
     firstName: { type: String },
-    passToken: { type: String }, //Change as needed?
+    password: { type: String }, //Is stored hashed
     imgProfile: { data: Buffer, contentType: String},// profilePhoto: { type: PHOTO }
 });
 

@@ -7,13 +7,11 @@ var User = require('./Users');
 var jwt = require('jsonwebtoken');
 var Posts = require('./Posts');
 var Comments = require('./Comments');
-//var Followers = require('./Followers');
 
 var app = express();
 module.exports = app; // for testing
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(passport.initialize());
 app.use(cors());
 
@@ -71,7 +69,7 @@ router.route('/signup')
         }
         else {
             var user = new User();
-            user.name = req.body.name;
+            user.firstName = req.body.name;
             user.username = req.body.username;
             user.password = req.body.password;
             // save the user
@@ -108,7 +106,8 @@ router.route('/signin')
                         var userToken = {id: user._id, username: user.username};
                         var token = jwt.sign(userToken, process.env.SECRET_KEY);
                         res.json({success: true, token: 'JWT ' + token});
-                    } else {
+                    }
+                    else {
                         res.status(401).send({success: false, message: 'Authentication failed.'});
                     }
                 });

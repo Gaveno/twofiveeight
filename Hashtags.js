@@ -9,7 +9,8 @@ mongoose.set('useCreateIndex', true);
 
 // user schema
 var HashtagSchema = new Schema({
-    text: { type: String, required: true }
+    text: { type: String, required: true } // Text that follows #
+    // NO expiration at this point.
 });
 
 HashtagSchema.pre('save', function(next) {

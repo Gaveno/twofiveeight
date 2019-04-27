@@ -10,7 +10,8 @@ mongoose.set('useCreateIndex', true);
 // user schema
 var PostHashtagsSchema = new Schema({
     post_id: { type: Schema.Types.ObjectId, ref: "PostSchema", required: true },
-    hashtag_id: { type: Schema.Types.ObjectId, ref: "HashtagSchema", required: true }
+    hashtag_id: { type: Schema.Types.ObjectId, ref: "HashtagSchema", required: true },
+    createdAt: { type: Date, expires: 604800, default: Date.now }
 });
 
 PostHashtagsSchema.pre('save', function(next) {

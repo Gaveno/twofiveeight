@@ -11,6 +11,7 @@ mongoose.set('useCreateIndex', true);
 var CommentSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true }, //Comment creator
     text: { type: String, required: true },
+    createdAt: { type: Date, expires: 604800, default: Date.now }
 });
 
 CommentSchema.pre('save', function(next) {

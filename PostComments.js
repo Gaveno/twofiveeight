@@ -10,7 +10,8 @@ mongoose.set('useCreateIndex', true);
 // user schema
 var PostCommentsSchema = new Schema({
     post_id: { type: Schema.Types.ObjectId, ref: "PostSchema", required: true },
-    comment_id: { type: Schema.Types.ObjectId, ref: "CommentSchema", required: true }
+    comment_id: { type: Schema.Types.ObjectId, ref: "CommentSchema", required: true },
+    createdAt: { type: Date, expires: 604800, default: Date.now }
 });
 
 PostCommentsSchema.pre('save', function(next) {

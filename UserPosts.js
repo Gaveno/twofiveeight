@@ -9,8 +9,9 @@ mongoose.set('useCreateIndex', true);
 
 // user schema
 var UserPostsSchema = new Schema({
-    user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true }, //ID- not username- of users
-    follower_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true } //ID- not username- of profile to follow
+    user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true },
+    post_id: { type: Schema.Types.ObjectId, ref: "PostSchema", required: true },
+    createdAt: { type: Date, expires: 604800, default: Date.now }
 });
 
 UserPostsSchema.pre('save', function(next) {

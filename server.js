@@ -123,16 +123,31 @@ router.route('/signin')
 
 //POSTS REQUESTS HERE
 router.route('/posts')
-    //POST
+    //POST (making a post)
+    .post(function(req,res)
+    {
+
+    });
+
+    //POST (making a post)
 
 //COMMENTS REQUESTS HERE
 router.route('/comments')
-    //GET
-    //POST
+    //POST (making a comment)
+    .post(function(req,res)
+    {
+
+    });
 
 //FOLLOWERS REQUESTS HERE
 router.route('/followers')
-//POST
+    //GET (see your followers)
+    //GET (see who you follow)
+    //gets with different follows
+    .get(function(req,res)
+    {
+
+    });
 
 router.route('/')
     .all(function (req, res) {

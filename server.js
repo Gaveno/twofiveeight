@@ -5,17 +5,20 @@ var cors = require('cors');
 var authJwtController = require('./auth_jwt');
 var User = require('./Users');
 var jwt = require('jsonwebtoken');
-var Posts = require('./Posts');
+var Post = require('./Posts');
 var Comments = require('./Comments');
-//var Followers = require('./Followers');
 
 var app = express();
 module.exports = app; // for testing
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(passport.initialize());
 app.use(cors());
+
+//Images:
+var multer  = require('multer')
+//var storage = multer.memoryStorage()
+//var upload = multer({ storage: storage })
 
 var router = express.Router();
 
@@ -71,7 +74,7 @@ router.route('/signup')
         }
         else {
             var user = new User();
-            user.name = req.body.name;
+            user.firstName = req.body.name;
             user.username = req.body.username;
             user.password = req.body.password;
             // save the user
@@ -108,7 +111,8 @@ router.route('/signin')
                         var userToken = {id: user._id, username: user.username};
                         var token = jwt.sign(userToken, process.env.SECRET_KEY);
                         res.json({success: true, token: 'JWT ' + token});
-                    } else {
+                    }
+                    else {
                         res.status(401).send({success: false, message: 'Authentication failed.'});
                     }
                 });
@@ -125,18 +129,71 @@ router.route('/signin')
 
 //POSTS REQUESTS HERE
 router.route('/posts')
-    //POST (making a post)
-    .post(function(req,res)
+    .post(authJwtController.isAuthenticated, function (req, res) //POST (making a new post) //upload.single('multerUpload')
     {
+        // if format = wrong, else post.
+        if (!req.body)
+            {
+                res.status(400).json({success: false, message: 'Incorrect post format'});
+            }
+        else if (res instanceof multer.MulterError) {
+            res.status(500).json({success: false, message: 'Image upload error'});
+        }
+        else
+        {
+            var post = new Post();
+            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
+            {
+                if(err)
+                {
+                    return res.status(403).json(err);
+                }
+                else
+                {
+                    post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
+                    post.text = req.body.text;
+                    // post.img = upload;
 
+                    post.save(function(err)
+                    {
+                        if(err)
+                        {
+                            return res.status(403).json(err);
+                        }
+                        else
+                        {
+                            return res.status(200).send({success: true, message: "Post added"});
+                        }
+                    })
+                }
+            })
+        }
+    })
+    .get(function(req,res) //get: global latest, feed latest, user latest, same but group of 10 from timestamp
+    {
+        if(!req.body)
+        {
+            return res.status(403).json({success: false, message: "Empty get"});
+        }
+        else {
+            if (req.query && (req.query.batch === undefined || req.query.batch === "false")) //Regular movie get. Implemented parameter design with gavenos help.
+            {
+                // IMPLEMENT
+            } else {
+                // IMPLEMENT - batch from certain time and parameters
+            }
+        }
+    })
+    .all(function (req, res)
+    {
+        console.log(req.body);
+        res = res.status(405);
+        res.send("HTTP method not implemented");
     });
-
-    //POST (making a post)
 
 //COMMENTS REQUESTS HERE
 router.route('/comments')
-    //POST (making a comment)
-    .post(function(req,res)
+    .post(authJwtController.isAuthenticated, function (req, res) //POST (making a comment)
     {
 
     });

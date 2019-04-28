@@ -196,8 +196,20 @@ router.route('/posts')
         else {
             if (req.query && (req.query.batch === undefined || req.query.batch === "false"))
             {
-                // IMPLEMENT
-            } else {
+                Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
+                {
+                    if (err) res.send(err);
+                    else if(Post)
+                    {
+                        return res.status(200).json({success: true, message: "Success: latest post found", Post: post});
+                    }
+                    else
+                    {
+                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                    }
+                })
+            }
+            else {
                 // IMPLEMENT - batch from certain time and parameters
             }
         }

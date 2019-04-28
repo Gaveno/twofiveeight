@@ -1,14 +1,16 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var passport = require('passport');
-var cors = require('cors');
-var authJwtController = require('./auth_jwt');
-var User = require('./Users');
-var jwt = require('jsonwebtoken');
-var Post = require('./Posts');
-var Comments = require('./Comments');
+const express = require('express');
+const bodyParser = require('body-parser');
+const passport = require('passport');
+const cors = require('cors');
+const authJwtController = require('./auth_jwt');
+const User = require('./Users');
+const jwt = require('jsonwebtoken');
+const Post = require('./Posts');
+const Comments = require('./Comments');
+const fs = require('fs');
+const multer  = require('multer');
 
-var app = express();
+const app = express();
 module.exports = app; // for testing
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -16,11 +18,19 @@ app.use(passport.initialize());
 app.use(cors());
 
 //Images:
-var multer  = require('multer')
+/*const storage = multer.diskStorage({
+    dest: function(req, res, cb) {
+        cb(null, 'uploads/');
+    }
+});
+
+const upload = multer({ storage: storage });*/
+const upload = multer({dest: "uploads/"});
+
 //var storage = multer.memoryStorage()
 //var upload = multer({ storage: storage })
 
-var router = express.Router();
+const router = express.Router();
 
 router.route('/postjwt')
     .post(authJwtController.isAuthenticated, function (req, res) {
@@ -129,19 +139,21 @@ router.route('/signin')
 
 //POSTS REQUESTS HERE
 router.route('/posts')
-    .post(authJwtController.isAuthenticated, function (req, res) //POST (making a new post) //upload.single('multerUpload')
+    //POST (making a new post) //upload.single('multerUpload')
+    .post(upload.single('file'), function (req, res)
     {
         // if format = wrong, else post.
+        console.log(JSON.stringify(req.body));
         if (!req.body)
-            {
-                res.status(400).json({success: false, message: 'Incorrect post format'});
-            }
-        else if (res instanceof multer.MulterError) {
+        {
+            res.status(400).json({success: false, message: 'Incorrect post format'});
+        }
+        else if (res instanceof multer.MulterError)
+        {
             res.status(500).json({success: false, message: 'Image upload error'});
         }
         else
         {
-            var post = new Post();
             jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
             {
                 if(err)
@@ -150,9 +162,13 @@ router.route('/posts')
                 }
                 else
                 {
+                    let post = new Post();
                     post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
                     post.text = req.body.text;
-                    // post.img = upload;
+                    post.img.data = fs.readFileSync(req.file.path);
+                    //post.img.data = req.file;
+                    post.img.contentType = 'image/jpeg';
+                    console.log(JSON.stringify(post));
 
                     post.save(function(err)
                     {
@@ -162,6 +178,10 @@ router.route('/posts')
                         }
                         else
                         {
+                            fs.unlink(req.file.path, (err) => {
+                                if (err) console.log("Failed to remove file");
+                                else console.log(req.file.path+" was deleted");
+                            });
                             return res.status(200).send({success: true, message: "Post added"});
                         }
                     })

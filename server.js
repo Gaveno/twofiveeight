@@ -140,10 +140,9 @@ router.route('/signin')
 //POSTS REQUESTS HERE
 router.route('/posts')
     //POST (making a new post) //upload.single('multerUpload')
-    .post(upload.single('file'), function (req, res)
+    .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
         // if format = wrong, else post.
-        console.log(JSON.stringify(req.body));
         if (!req.body)
         {
             res.status(400).json({success: false, message: 'Incorrect post format'});
@@ -168,7 +167,6 @@ router.route('/posts')
                     post.img.data = fs.readFileSync(req.file.path);
                     //post.img.data = req.file;
                     post.img.contentType = 'image/jpeg';
-                    console.log(JSON.stringify(post));
 
                     post.save(function(err)
                     {
@@ -179,8 +177,8 @@ router.route('/posts')
                         else
                         {
                             fs.unlink(req.file.path, (err) => {
-                                if (err) console.log("Failed to remove file");
-                                else console.log(req.file.path+" was deleted");
+                                if (err) console.log("Failed to remove file.");
+                                else console.log(req.file.path+" was deleted after upload.");
                             });
                             return res.status(200).send({success: true, message: "Post added"});
                         }
@@ -196,7 +194,7 @@ router.route('/posts')
             return res.status(403).json({success: false, message: "Empty get"});
         }
         else {
-            if (req.query && (req.query.batch === undefined || req.query.batch === "false")) //Regular movie get. Implemented parameter design with gavenos help.
+            if (req.query && (req.query.batch === undefined || req.query.batch === "false"))
             {
                 // IMPLEMENT
             } else {

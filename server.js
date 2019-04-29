@@ -194,23 +194,52 @@ router.route('/posts')
             return res.status(403).json({success: false, message: "Empty get"});
         }
         else {
-            if (req.query && (req.query.batch === undefined || req.query.batch === "false"))
-            {
-                Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
+            if (req.query && (req.query.batch === undefined || req.query.batch === "false") &&
+                (req.query.scopeChoice === undefined || req.query.scopeChoice === "global") &&
+                (req.query.postID === undefined || req.query.postID === "0") )
                 {
-                    if (err) res.send(err);
-                    else if(Post)
+                    Post.findOne().sort({createdAt: -1}).limit(1).lean().exec(function (err, post)
                     {
-                        return res.status(200).json({success: true, message: "Success: latest post found", Post: post});
-                    }
-                    else
+                        if (err) res.send(err);
+                        else if(Post)
+                        {
+                            User.findById(post.user_id).exec(function (err, userFound)
+                            {
+                                const returnedWithUsername = Object.assign(post, {username:userFound.username})
+                                return res.status(200).json({success: true, message: "Success: latest post found", returnedWithUsername });
+                            })
+                        }
+                        else
+                        {
+                            return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                        }
+                    })
+                }
+            // BELOW ISN'T DONE YET, need to limit to single user ID posts
+            else if (req.query && (req.query.batch === undefined || req.query.batch === "false") &&
+                    (req.query.scopeChoice === "user" && req.query.userID) &&
+                    (req.query.postID === undefined || req.query.postID === "0") )
+                {
+                    Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
                     {
-                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
-                    }
-                })
+                        if (err) res.send(err);
+                        else if(Post)
+                        {
+                            return res.status(200).json({success: true, message: "Success: latest post found", Post: post});
+                        }
+                        else
+                        {
+                            return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                        }
+                    })
+                }
+            // BATCH REQUESTS
+            else if (req.query && (req.query.batch && req.query.batch === "true"))
+            {
+                return res.status(501).json({success: false, message: "Error: Batch requests not yet implemented"});
             }
-            else {
-                // IMPLEMENT - batch from certain time and parameters
+        else {
+                return res.status(400).json({success: false, message: "Error: Invalid request format"});
             }
         }
     })

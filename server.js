@@ -158,6 +158,10 @@ router.route('/posts')
                 {
                     return res.status(403).json(err);
                 }
+                else if (req.file === undefined)
+                {
+                    res.status(500).json({success: false, message: 'No image provided'});
+                }
                 else
                 {
                     let post = new Post();

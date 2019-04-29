@@ -191,20 +191,20 @@ router.route('/posts')
         // Specific post by ID
         if (req.query.postID && req.query.postID !== "0")
             {
-                Post.findById(req.query.postID).exec(function (err, post)
+                Post.findById(req.query.postID).exec(function (err, postRaw)
                 {
                     if (err) res.send(err);
                     else if(Post)
                     {
-                        User.findById(post.user_id).exec(function (err, userFound)
+                        User.findById(postRaw.user_id).exec(function (err, userFound)
                         {
-                            const results = Object.assign(post, {username:userFound.username});
-                            return res.status(200).json({success: true, message: "Success: specific post found", results });
+                            const post = Object.assign(postRaw, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: specific post found", post });
                         })
                     }
                     else
                     {
-                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                        return res.status(404).json({success: false, message: "Error: no post found"});
                     }
                 })
             }
@@ -215,20 +215,20 @@ router.route('/posts')
             (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
             (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
             {
-                Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
+                Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err) res.send(err);
-                    else if(post)
+                    else if(postRaw)
                     {
-                        User.findById(post.user_id).exec(function (err, userFound)
+                        User.findById(postRaw.user_id).exec(function (err, userFound)
                         {
-                            const results = Object.assign(post, {username:userFound.username});
-                            return res.status(200).json({success: true, message: "Success: latest global post found", results });
+                            const post = Object.assign(postRaw, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: latest global post found", post });
                         })
                     }
                     else
                     {
-                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                        return res.status(404).json({success: false, message: "Error: no post found"});
                     }
                 })
             }
@@ -238,20 +238,20 @@ router.route('/posts')
             (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
             (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
             {
-                Post.findOne({ user_id: req.query.userID }).sort({createdAt: -1}).limit(1).exec(function (err, post)
+                Post.findOne({ user_id: req.query.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err) res.send(err);
-                    else if(post)
+                    else if(postRaw)
                     {
-                        User.findById(post.user_id).exec(function (err, userFound)
+                        User.findById(postRaw.user_id).exec(function (err, userFound)
                         {
-                            const results = Object.assign(post, {username:userFound.username});
-                            return res.status(200).json({success: true, message: "Success: latest post by user found", results });
+                            const post = Object.assign(postRaw, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: latest post by user found", post });
                         })
                     }
                     else
                     {
-                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                        return res.status(404).json({success: false, message: "Error: no post found"});
                     }
                 })
             }

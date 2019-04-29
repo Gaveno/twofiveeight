@@ -7,14 +7,14 @@ mongoose.Promise = global.Promise;
 mongoose.connect(process.env.DB, { useNewUrlParser: true } );
 mongoose.set('useCreateIndex', true);
 
-// user schema
+
 var UserSchema = new Schema({
     username: { type: String, required: true },
     about: { type: String },
     lastName: { type: String },
     firstName: { type: String },
     password: { type: String }, // Stored as a hashed copy
-    imgProfile: { data: Buffer, contentType: String},// profilePhoto: { type: PHOTO }
+    imgProfile: { data: Buffer, contentType: String} // profile photo
 });
 
 // hash the password before the user is saved

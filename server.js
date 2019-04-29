@@ -137,9 +137,8 @@ router.route('/signin')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
-//POSTS REQUESTS HERE
 router.route('/posts')
-    //POST (making a new post) //upload.single('multerUpload')
+//POST (making a new post) //upload.single('multerUpload')
     .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
         // if format = wrong, else post.
@@ -189,58 +188,112 @@ router.route('/posts')
     })
     .get(function(req,res) //get: global latest, feed latest, user latest, same but group of 10 from timestamp
     {
-        if(!req.body)
-        {
-            return res.status(403).json({success: false, message: "Empty get"});
-        }
-        else {
-            if (req.query && (req.query.batch === undefined || req.query.batch === "false") &&
-                (req.query.scopeChoice === undefined || req.query.scopeChoice === "global") &&
-                (req.query.postID === undefined || req.query.postID === "0") )
-                {
-                    Post.findOne().sort({createdAt: -1}).limit(1).lean().exec(function (err, post)
-                    {
-                        if (err) res.send(err);
-                        else if(Post)
-                        {
-                            User.findById(post.user_id).exec(function (err, userFound)
-                            {
-                                const returnedWithUsername = Object.assign(post, {username:userFound.username})
-                                return res.status(200).json({success: true, message: "Success: latest post found", returnedWithUsername });
-                            })
-                        }
-                        else
-                        {
-                            return res.status(404).json({success: false, message: "Error: no post found", Post: post});
-                        }
-                    })
-                }
-            // BELOW ISN'T DONE YET, need to limit to single user ID posts
-            else if (req.query && (req.query.batch === undefined || req.query.batch === "false") &&
-                    (req.query.scopeChoice === "user" && req.query.userID) &&
-                    (req.query.postID === undefined || req.query.postID === "0") )
-                {
-                    Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
-                    {
-                        if (err) res.send(err);
-                        else if(Post)
-                        {
-                            return res.status(200).json({success: true, message: "Success: latest post found", Post: post});
-                        }
-                        else
-                        {
-                            return res.status(404).json({success: false, message: "Error: no post found", Post: post});
-                        }
-                    })
-                }
-            // BATCH REQUESTS
-            else if (req.query && (req.query.batch && req.query.batch === "true"))
+        // Specific post by ID
+        if (req.query.postID && req.query.postID !== "0")
             {
-                return res.status(501).json({success: false, message: "Error: Batch requests not yet implemented"});
+                Post.findById(req.query.postID).exec(function (err, post)
+                {
+                    if (err) res.send(err);
+                    else if(Post)
+                    {
+                        User.findById(post.user_id).exec(function (err, userFound)
+                        {
+                            const results = Object.assign(post, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: specific post found", results });
+                        })
+                    }
+                    else
+                    {
+                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                    }
+                })
             }
-        else {
-                return res.status(400).json({success: false, message: "Error: Invalid request format"});
+        // Latest global post
+        else if ( (!req.query) ||
+            (req.query.postScope === undefined || req.query.postScope === "global") &&
+            (req.query.userID === undefined || req.query.userID === 0) &&
+            (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
+            (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
+            {
+                Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, post)
+                {
+                    if (err) res.send(err);
+                    else if(post)
+                    {
+                        User.findById(post.user_id).exec(function (err, userFound)
+                        {
+                            const results = Object.assign(post, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: latest global post found", results });
+                        })
+                    }
+                    else
+                    {
+                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                    }
+                })
             }
+        // Latest post by a specific user by ID
+        else if (
+            (req.query.postScope === "user") && (req.query.userID) &&
+            (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
+            (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
+            {
+                Post.findOne({ user_id: req.query.userID }).sort({createdAt: -1}).limit(1).exec(function (err, post)
+                {
+                    if (err) res.send(err);
+                    else if(post)
+                    {
+                        User.findById(post.user_id).exec(function (err, userFound)
+                        {
+                            const results = Object.assign(post, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: latest post by user found", results });
+                        })
+                    }
+                    else
+                    {
+                        return res.status(404).json({success: false, message: "Error: no post found", Post: post});
+                    }
+                })
+            }
+        // Latest post in logged in users feed
+        else if (
+            (req.query.postScope === "feed") && (req.query.userID) &&
+            (req.query.postTime === undefined || req.query.postTime !== "latest") &&
+            (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
+            {
+                // Find all user ID's that a user follows
+                return res.status(501).json({success: false, message: "Error: method not implemented"});
+            }
+        // Group of posts before specific timestamp in global feed
+        else if (
+            (req.query.postScope === undefined || req.query.postScope === "global") &&
+            (req.query.userID === undefined || req.query.userID === 0) &&
+            (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
+            (req.query.resultsNumber !== undefined ) )
+            {
+                return res.status(501).json({success: false, message: "Error: method not implemented"});
+            }
+        // Group of posts before specific timestamp from single user
+        else if (
+            (req.query.postScope === undefined || req.query.postScope === "user") &&
+            (req.query.userID || req.query.userID !== "0") &&
+            (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
+            (req.query.resultsNumber !== undefined ) )
+            {
+                return res.status(501).json({success: false, message: "Error: method not implemented"});
+            }
+        // Group of posts before specific timestamp from users a person is following
+        else if (
+            (req.query.postScope === undefined || req.query.postScope === "user") &&
+            (req.query.userID || req.query.userID !== "0") &&
+            (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
+            (req.query.resultsNumber !== undefined ) )
+        {
+            return res.status(501).json({success: false, message: "Error: method not implemented"});
+        }
+        else
+        {
+            return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
     })
     .all(function (req, res)

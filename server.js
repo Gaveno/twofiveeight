@@ -213,7 +213,7 @@ router.route('/posts')
                 })
             }
         // Latest global post
-        else if ( (!req.query) ||
+        else if ( (!req.query.body) ||
             (req.body.postScope === undefined || req.body.postScope === "global") &&
             (req.body.userID === undefined || req.body.userID === 0) &&
             (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
@@ -228,6 +228,29 @@ router.route('/posts')
                         {
                             const post = Object.assign(postRaw, {username:userFound.username});
                             return res.status(200).json({success: true, message: "Success: latest global post found", post });
+                        })
+                    }
+                    else
+                    {
+                        return res.status(404).json({success: false, message: "Error: no post found"});
+                    }
+                })
+            }
+        // Global post one before specific timestamp
+        else if ( (req.body.postScope === undefined || req.body.postScope === "global") &&
+            (req.body.userID === undefined || req.body.userID === 0) &&
+            (req.body.postTime /*&& req.body.postTime !== "latest" && req.body.postTime !== "0"*/) &&
+            (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
+            {
+                Post.findOne({"createdAt":{$lt:req.body.postTime}}).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
+                {
+                    if (err) res.send(err);
+                    else if(postRaw)
+                    {
+                        User.findById(postRaw.user_id).exec(function (err, userFound)
+                        {
+                            const post = Object.assign(postRaw, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: single post before postTime found", post });
                         })
                     }
                     else
@@ -274,10 +297,31 @@ router.route('/posts')
             (req.body.postScope === undefined || req.body.postScope === "global") &&
             (req.body.userID === undefined || req.body.userID === 0) &&
             (req.body.postTime && req.body.postTime !== "latest" && req.body.postTime !== "0") &&
-            (req.body.resultsNumber !== undefined ) )
+            (req.body.resultsNumber && req.body.resultsNumber > 1 ) )
+            // TODO: NOT CORRECT YET
             {
-                return res.status(501).json({success: false, message: "Error: method not implemented"});
-            }
+                    Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
+
+                    {
+                        if (err) res.send(err);
+                        else if(postRaw)
+                        {
+                            User.findById(postRaw.user_id).exec(function (err, userFound)
+                            {
+                                if (err) res.send(err);
+                                else
+                                {
+                                    const post = Object.assign(postRaw, {username:userFound.username});
+                                    return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
+                                }
+                            })
+                        }
+                        else
+                        {
+                            return res.status(404).json({success: false, message: "Error: no post found"});
+                        }
+                    })
+                }
 
         // Group of posts before specific timestamp from single user
         else if (

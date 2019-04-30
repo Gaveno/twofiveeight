@@ -193,9 +193,9 @@ router.route('/posts')
     .get(function(req,res) //get: global latest, feed latest, user latest, same but group of 10 from timestamp
     {
         // Specific post by ID
-        if (req.query.postID && req.query.postID !== "0")
+        if (req.body.postID && req.body.postID !== "0")
             {
-                Post.findById(req.query.postID).exec(function (err, postRaw)
+                Post.findById(req.body.postID).exec(function (err, postRaw)
                 {
                     if (err) res.send(err);
                     else if(Post)
@@ -214,10 +214,10 @@ router.route('/posts')
             }
         // Latest global post
         else if ( (!req.query) ||
-            (req.query.postScope === undefined || req.query.postScope === "global") &&
-            (req.query.userID === undefined || req.query.userID === 0) &&
-            (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
-            (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
+            (req.body.postScope === undefined || req.body.postScope === "global") &&
+            (req.body.userID === undefined || req.body.userID === 0) &&
+            (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
+            (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
             {
                 Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
@@ -238,11 +238,11 @@ router.route('/posts')
             }
         // Latest post by a specific user by ID
         else if (
-            (req.query.postScope === "user") && (req.query.userID) &&
-            (req.query.postTime === undefined || req.query.postTime === "latest" || req.query.postTime === "0") &&
-            (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
+            (req.body.postScope === "user") && (req.body.userID) &&
+            (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
+            (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
             {
-                Post.findOne({ user_id: req.query.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
+                Post.findOne({ user_id: req.body.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err) res.send(err);
                     else if(postRaw)
@@ -268,15 +268,17 @@ router.route('/posts')
                 // Find all user ID's that a user follows
                 return res.status(501).json({success: false, message: "Error: method not implemented"});
             }
+
         // Group of posts before specific timestamp in global feed
         else if (
-            (req.query.postScope === undefined || req.query.postScope === "global") &&
-            (req.query.userID === undefined || req.query.userID === 0) &&
-            (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
-            (req.query.resultsNumber !== undefined ) )
+            (req.body.postScope === undefined || req.body.postScope === "global") &&
+            (req.body.userID === undefined || req.body.userID === 0) &&
+            (req.body.postTime && req.body.postTime !== "latest" && req.body.postTime !== "0") &&
+            (req.body.resultsNumber !== undefined ) )
             {
                 return res.status(501).json({success: false, message: "Error: method not implemented"});
             }
+
         // Group of posts before specific timestamp from single user
         else if (
             (req.query.postScope === undefined || req.query.postScope === "user") &&

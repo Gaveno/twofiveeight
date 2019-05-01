@@ -9,6 +9,7 @@ const Post = require('./Posts');
 const Comments = require('./Comments');
 const fs = require('fs');
 const multer  = require('multer');
+const bodyParser = require('body-parser');
 
 const app = express();
 module.exports = app; // for testing
@@ -16,6 +17,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(passport.initialize());
 app.use(cors());
+app.use(bodyParser.json({limit: '300kb'}));
 
 //Images:
 /*const storage = multer.diskStorage({

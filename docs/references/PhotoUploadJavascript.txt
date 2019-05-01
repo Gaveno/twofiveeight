@@ -1,1 +1,3 @@
 https://medium.com/hootsuite-engineering/mobile-photo-uploads-with-html5-f7ea174ef128
+https://stackoverflow.com/questions/36280818/how-to-convert-file-to-base64-in-javascript
+https://stackoverflow.com/questions/20958078/resize-a-base-64-image-in-javascript-without-using-canvas

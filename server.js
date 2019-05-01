@@ -262,7 +262,7 @@ router.route('/posts')
                 })
             }
         // Latest global post
-        else if ( (!req.query.body) ||
+        else if ( (!req.body) ||
             (req.body.postScope === undefined || req.body.postScope === "global") &&
             (req.body.userID === undefined || req.body.userID === 0) &&
             (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
@@ -349,7 +349,7 @@ router.route('/posts')
             (req.body.resultsNumber && req.body.resultsNumber > 1 ) )
             // TODO: NOT CORRECT YET
             {
-                    Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
+                    Post.findOne().sort({createdAt: -1}).limit(req.body.resultsNumber).exec(function (err, postRaw)
 
                     {
                         if (err) res.send(err);
@@ -370,6 +370,7 @@ router.route('/posts')
                             return res.status(404).json({success: false, message: "Error: no post found"});
                         }
                     })
+                    
                 }
 
         // Group of posts before specific timestamp from single user

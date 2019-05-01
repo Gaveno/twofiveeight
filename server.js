@@ -12,10 +12,13 @@ const multer  = require('multer');
 
 const app = express();
 module.exports = app; // for testing
+app.use(bodyParser({limit: '5mb'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(passport.initialize());
 app.use(cors());
+
+
 
 //Images:
 /*const storage = multer.diskStorage({

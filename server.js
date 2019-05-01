@@ -134,6 +134,8 @@ router.route('/signup')
             user.imgProfile.data = null;
             user.imgProfile.contentType = null;
             user.about = null;
+            user.officialVerification = false;
+            user.isAdmin = false;
             // save the user
             user.save(function(err) {
                 if (err) {

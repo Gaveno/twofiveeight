@@ -14,7 +14,9 @@ var UserSchema = new Schema({
     lastName: { type: String },
     firstName: { type: String },
     password: { type: String }, // Stored as a hashed copy
-    imgProfile: { data: Buffer, contentType: String} // profile photo
+    imgProfile: { data: Buffer, contentType: String}, // profile photo
+    officialVerification: { type: Boolean },
+    isAdmin: { type: Boolean }
 });
 
 // hash the password before the user is saved

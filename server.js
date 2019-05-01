@@ -65,16 +65,55 @@ router.route('/users/:userId')
     });
 
 router.route('/users')
-    .get(authJwtController.isAuthenticated, function (req, res) {
-        User.find(function (err, users) {
-            if (err) res.send(err);
-            // return the users
-            res.json(users);
-        });
+    .get(authJwtController.isAuthenticated, function (req, res)
+    {
+        // TODO: DISABLE!
+        if (req.body.testingParamOn)
+        {
+            User.find(function (err, users) {
+                if (err) res.send(err);
+                // return the users
+                res.json(users);
+            })
+        }
+        else
+        {
+            return res.status(400).json({success: false, message: "Error: Invalid request"});
+        }
+    })
+    .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
+    {
+        if (req.body.userID && req.body.uploadProfilePhoto === "1")
+        {
+            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
+            {
+                if(err)
+                {
+                    return res.status(403).json(err);
+                }
+                else if (req.file === undefined)
+                {
+                    res.status(500).json({success: false, message: 'No image provided'});
+                }
+                else
+                {
+                    User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.data': fs.readFileSync(req.file.path)}},
+                        function(err, doc) {if (err) res.send(err); else console.log(doc);});
+                    User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.contentType': 'image/jpeg'}},
+                        function(err, doc) {if (err) res.send(err); else console.log(doc);});
+                    return res.status(200).json({success: true, message: "Success: profile photo updated"});
+                }
+            })
+        }
+        else
+        {
+            console.log("put users: " + JSON.stringify(req.body));
+            return res.status(400).json({success: false, message: "Error: Invalid request"});
+        }
     })
     .all(function (req, res) {
         console.log(req.body);
-        res.status(403).send({ success: false, message: "Operation not supported. Only GET allowed." });
+        res.status(403).send({ success: false, message: "Operation not supported" });
     });
 
 router.route('/signup')
@@ -87,6 +126,11 @@ router.route('/signup')
             user.firstName = req.body.name;
             user.username = req.body.username;
             user.password = req.body.password;
+            user.lastName = null;
+            user.imgProfile = null;
+            user.imgProfile.data = null;
+            user.imgProfile.contentType = null;
+            user.about = null;
             // save the user
             user.save(function(err) {
                 if (err) {

@@ -79,6 +79,33 @@ router.route('/users')
                 res.json(users);
             })
         }
+        else if (req.body.infoByID && (req.body.includeProfilePhoto === "true" || req.body.includeProfilePhoto === undefined) )
+        {
+            User.findOne({_id: req.body.infoByID}, { password: 0}).exec(function (err, userFound)
+            {
+               if (err) res.send(err);
+               else
+               {
+                   const userInfo = Object.assign(userFound);
+                   return res.status(200).json({success: true, message: "Success: specific user found", userInfo });
+               }
+
+            })
+        }
+
+        else if (req.body.infoByID && (req.body.includeProfilePhoto === "false" ) )
+        {
+            User.findOne({_id: req.body.infoByID}, { password: 0, imgProfile: 0}).exec(function (err, userFound)
+            {
+                if (err) res.send(err);
+                else
+                {
+                    const userInfo = Object.assign(userFound);
+                    return res.status(200).json({success: true, message: "Success: specific user found", userInfo });
+                }
+
+            })
+        }
         else
         {
             return res.status(400).json({success: false, message: "Error: Invalid request"});
@@ -370,7 +397,7 @@ router.route('/posts')
                             return res.status(404).json({success: false, message: "Error: no post found"});
                         }
                     })
-                    
+
                 }
 
         // Group of posts before specific timestamp from single user

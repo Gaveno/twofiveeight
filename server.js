@@ -217,11 +217,13 @@ router.route('/posts/global')
     .get(function (req, res)
     {
         let numResults = 10;
-        /*if (req.query.numResults && req.query.numResults > 0)
-            numResults = req.query.numResults;*/
+        let skip = 0;
+        if (req.query.skip && req.query.skip > 0)
+            skip = parseInt(req.query.skip);
         console.log("numResults: ", numResults);
         Post.aggregate()
             .sort({createdAt: -1})
+            .skip(skip)
             .limit(numResults)
             .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
             .exec(function (err, postsRaw)

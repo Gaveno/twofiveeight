@@ -220,7 +220,7 @@ router.route('/posts/global')
         let skip = 0;
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
-        console.log("numResults: ", numResults);
+        console.log("skip: ", skip);
         Post.aggregate()
             .sort({createdAt: -1})
             .skip(skip)
@@ -236,10 +236,12 @@ router.route('/posts/global')
                     {
                         //console.log("previous post: ", postsRaw[i]);
                         let newPost = Object.assign({}, {
+                            _id: postsRaw[i]._id,
                             username: postsRaw[i].user[0].username,
                             profPhoto: postsRaw[i].user[0].imgProfile,
                             verified: postsRaw[i].user[0].officialVerification,
                             commentCount: 0, // TO-DO: add comment count to the aggregate
+                            text: postsRaw[i].text,
                             img: postsRaw[i].img,
                         });
                         //console.log("alterned post: ", newPost);

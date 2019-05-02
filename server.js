@@ -213,6 +213,49 @@ router.route('/signin')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
+router.route('/posts/global')
+    .get(function (req, res)
+    {
+        let numResults = 10;
+        /*if (req.query.numResults && req.query.numResults > 0)
+            numResults = req.query.numResults;*/
+        console.log("numResults: ", numResults);
+        Post.aggregate()
+            .sort({createdAt: -1})
+            .limit(numResults)
+            .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
+            .exec(function (err, postsRaw)
+            {
+                if (err) res.send(err);
+                else if (postsRaw && postsRaw.length > 0)
+                {
+                    // Extract only needed user info
+                    for (let i = 0; i < postsRaw.length; i++)
+                    {
+                        //console.log("previous post: ", postsRaw[i]);
+                        let newPost = Object.assign({}, {
+                            username: postsRaw[i].user[0].username,
+                            profPhoto: postsRaw[i].user[0].imgProfile,
+                            verified: postsRaw[i].user[0].officialVerification,
+                            commentCount: 0, // TO-DO: add comment count to the aggregate
+                            img: postsRaw[i].img,
+                        });
+                        //console.log("alterned post: ", newPost);
+                        postsRaw[i] = Object.assign({}, newPost);
+                    }
+                    //console.log(JSON.stringify(postsRaw));
+                    return res.status(200).json({success: true, feed: postsRaw});
+                    //const post = Object.assign(postRaw, {username:userFound.username});
+                    //return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
+                }
+                else
+                {
+                    return res.status(404).json({success: false, message: "Error: no post found"});
+                }
+            });
+        //res.status(200).json({success: true, message: "Get on posts global"});
+    });
+
 router.route('/posts')
 //POST (making a new post) //upload.single('multerUpload')
     .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
@@ -268,9 +311,14 @@ router.route('/posts')
     })
     .get(function(req,res) //get: global latest, feed latest, user latest, same but group of 10 from timestamp
     {
+        console.log("get on posts");
+        console.log("req: ",req);
+        console.log("req.body: " + JSON.stringify(req.body));
+        console.log("req.data: " + JSON.stringify(req.data));
         // Specific post by ID
         if (req.body.postID && req.body.postID !== "0")
             {
+                console.log("entrance 1 "+JSON.stringify(req.body));
                 Post.findById(req.body.postID).exec(function (err, postRaw)
                 {
                     if (err)
@@ -293,11 +341,12 @@ router.route('/posts')
             }
         // Latest global post
         else if ( (!req.body) ||
-            (req.body.postScope === undefined || req.body.postScope === "global") &&
-            (req.body.userID === undefined || req.body.userID === 0) &&
-            (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
-            (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
+            (!req.body.postScope || req.body.postScope === "global") &&
+            (!req.body.userID || req.body.userID === 0) &&
+            (!req.body.postTime || req.body.postTime === "latest" || req.body.postTime === "0") &&
+            (!req.body.resultsNumber || req.body.resultsNumber === 1) )
             {
+                console.log("entrance 2 "+JSON.stringify(req.body));
                 Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err)
@@ -324,6 +373,7 @@ router.route('/posts')
             (req.body.postTime /*&& req.body.postTime !== "latest" && req.body.postTime !== "0"*/) &&
             (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
             {
+                console.log("entrance 3 "+JSON.stringify(req.body));
                 Post.findOne({"createdAt":{$lt:req.body.postTime}}).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err)
@@ -361,6 +411,7 @@ router.route('/posts')
             (req.body.postTime === undefined || req.body.postTime === "latest" || req.body.postTime === "0") &&
             (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
             {
+                console.log("entrance 4 "+JSON.stringify(req.body));
                 Post.findOne({ user_id: req.body.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
                     if (err)
@@ -390,6 +441,7 @@ router.route('/posts')
             (req.body.postTime /*&& req.body.postTime !== "latest" && req.body.postTime !== "0"*/) &&
             (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
         {
+            console.log("entrance 5 "+JSON.stringify(req.body));
             Post.findOne({ user_id: req.body.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
             {
                 if (err)
@@ -420,6 +472,7 @@ router.route('/posts')
             (req.query.postTime === undefined || req.query.postTime !== "latest") &&
             (req.query.resultsNumber === undefined || req.query.resultsNumber === 1) )
             {
+                console.log("entrance 6 "+JSON.stringify(req.body));
                 // Find all user ID's that a user follows
                 return res.status(501).json({success: false, message: "Error: method not implemented"});
             }
@@ -432,29 +485,38 @@ router.route('/posts')
             (req.body.resultsNumber && req.body.resultsNumber > 1 ) )
             // TODO: NOT CORRECT YET
             {
-                    Post.findOne().sort({createdAt: -1}).limit(req.body.resultsNumber).exec(function (err, postRaw)
-
+                console.log("entrance 7 "+JSON.stringify(req.body));
+                    //Post.findOne().sort({createdAt: -1}).limit(req.body.resultsNumber).exec(function (err, postRaw)
+                Post.aggregate()
+                    .sort({createdAt: -1})
+                    .limit(req.body.resultsNumber)
+                    .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
+                    .exec(function (err, postsRaw)
                     {
                         if (err) res.send(err);
-                        else if(postRaw)
+                        else if (postsRaw && postsRaw.length > 0)
                         {
-                            User.findById(postRaw.user_id).exec(function (err, userFound)
-                            {
-                                if (err) res.send(err);
-                                else
-                                {
-                                    const post = Object.assign(postRaw, {username:userFound.username});
-                                    return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
-                                }
-                            })
+                            // Extract only needed user info
+                            postsRaw.forEach((post, i, postArray) => {
+                                let newPost = Object.assign({}, {
+                                    img: post.img,
+                                    username: post.user.username,
+                                    profPhoto: post.user.imgProfile,
+                                    commentCount: 0, // TO-DO: add comment count to the aggregate
+                                });
+                                Object.assign(postArray[i], newPost);
+                            });
+                            console.log(JSON.stringify(postsRaw));
+                            return res.status(200).json({success: true, feed: postsRaw});
+                                    //const post = Object.assign(postRaw, {username:userFound.username});
+                                    //return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
                         }
                         else
                         {
                             return res.status(404).json({success: false, message: "Error: no post found"});
                         }
                     })
-
-                }
+            }
 
         // Group of posts before specific timestamp from single user
         else if (
@@ -463,6 +525,7 @@ router.route('/posts')
             (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
             (req.query.resultsNumber !== undefined ) )
             {
+                console.log("entrance 8 "+JSON.stringify(req.body));
                 return res.status(501).json({success: false, message: "Error: method not implemented"});
             }
         // Group of posts before specific timestamp from users a person is following
@@ -472,10 +535,12 @@ router.route('/posts')
             (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
             (req.query.resultsNumber !== undefined ) )
         {
+            console.log("entrance 9 "+JSON.stringify(req.body));
             return res.status(501).json({success: false, message: "Error: method not implemented"});
         }
         else
         {
+            console.log("entrance 10 "+JSON.stringify(req.body));
             return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
     })

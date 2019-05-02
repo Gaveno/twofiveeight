@@ -273,7 +273,10 @@ router.route('/posts')
             {
                 Post.findById(req.body.postID).exec(function (err, postRaw)
                 {
-                    if (err) res.send(err);
+                    if (err)
+                    {
+                        return res.status(403).json(err);
+                    }
                     else if(Post)
                     {
                         User.findById(postRaw.user_id).exec(function (err, userFound)
@@ -297,7 +300,10 @@ router.route('/posts')
             {
                 Post.findOne().sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
-                    if (err) res.send(err);
+                    if (err)
+                    {
+                        return res.status(403).json(err);
+                    }
                     else if(postRaw)
                     {
                         User.findById(postRaw.user_id).exec(function (err, userFound)
@@ -320,13 +326,27 @@ router.route('/posts')
             {
                 Post.findOne({"createdAt":{$lt:req.body.postTime}}).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
-                    if (err) res.send(err);
+                    if (err)
+                    {
+                        return res.status(403).json(err);
+                    }
                     else if(postRaw)
                     {
                         User.findById(postRaw.user_id).exec(function (err, userFound)
                         {
-                            const post = Object.assign(postRaw, {username:userFound.username});
-                            return res.status(200).json({success: true, message: "Success: single post before postTime found", post });
+                            if (err)
+                            {
+                                return res.status(403).json(err);
+                            }
+                            else if(userFound)
+                            {
+                                const post = Object.assign(postRaw, {username:userFound.username});
+                                return res.status(200).json({success: true, message: "Success: single post before postTime found", post });
+                            }
+                            else
+                            {
+                                return res.status(404).json({success: false, message: "Error: no post found"});
+                            }
                         })
                     }
                     else
@@ -343,13 +363,20 @@ router.route('/posts')
             {
                 Post.findOne({ user_id: req.body.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
                 {
-                    if (err) res.send(err);
+                    if (err)
+                    {
+                        return res.status(403).json(err);
+                    }
                     else if(postRaw)
                     {
                         User.findById(postRaw.user_id).exec(function (err, userFound)
                         {
-                            const post = Object.assign(postRaw, {username:userFound.username});
-                            return res.status(200).json({success: true, message: "Success: latest post by user found", post });
+                            if (err) res.send(err);
+                            else
+                            {
+                                const post = Object.assign(postRaw, {username:userFound.username});
+                                return res.status(200).json({success: true, message: "Success: latest post by user found", post });
+                            }
                         })
                     }
                     else
@@ -358,6 +385,35 @@ router.route('/posts')
                     }
                 })
             }
+        // Userpost one before specific timestamp
+        else if ( (req.body.postScope === "user") && (req.body.userID) &&
+            (req.body.postTime /*&& req.body.postTime !== "latest" && req.body.postTime !== "0"*/) &&
+            (req.body.resultsNumber === undefined || req.body.resultsNumber === 1) )
+        {
+            Post.findOne({ user_id: req.body.userID }).sort({createdAt: -1}).limit(1).exec(function (err, postRaw)
+            {
+                if (err)
+                {
+                    return res.status(403).json(err);
+                }
+                else if(postRaw)
+                {
+                    User.findById(postRaw.user_id).exec(function (err, userFound)
+                    {
+                        if (err) res.send(err);
+                        else
+                        {
+                            const post = Object.assign(postRaw, {username:userFound.username});
+                            return res.status(200).json({success: true, message: "Success: single post by user before postTime found", post });
+                        }
+                    })
+                }
+                else
+                {
+                    return res.status(404).json({success: false, message: "Error: no post found"});
+                }
+            })
+        }
         // Latest post in logged in users feed
         else if (
             (req.query.postScope === "feed") && (req.query.userID) &&

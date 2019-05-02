@@ -240,6 +240,7 @@ router.route('/posts/global')
                             username: postsRaw[i].user[0].username,
                             profPhoto: postsRaw[i].user[0].imgProfile,
                             verified: postsRaw[i].user[0].officialVerification,
+                            createdAt: postsRaw[i].createdAt,
                             commentCount: 0, // TO-DO: add comment count to the aggregate
                             text: postsRaw[i].text,
                             img: postsRaw[i].img,

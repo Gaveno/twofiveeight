@@ -7,8 +7,10 @@ const User = require('./Users');
 const jwt = require('jsonwebtoken');
 const Post = require('./Posts');
 const Comments = require('./Comments');
+//const PostComments = require('./PostComments');
 const fs = require('fs');
 const multer  = require('multer');
+mongoose = require('mongoose');
 
 const app = express();
 module.exports = app; // for testing
@@ -220,7 +222,7 @@ router.route('/posts/global')
         let skip = 0;
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
-        console.log("skip: ", skip);
+        //console.log("skip: ", skip);
         Post.aggregate()
             .sort({createdAt: -1})
             .skip(skip)
@@ -259,6 +261,9 @@ router.route('/posts/global')
                 }
             });
         //res.status(200).json({success: true, message: "Get on posts global"});
+    })
+    .all(function(req, res) {
+        return res.status(403).json("Error: Invalid operation on path.");
     });
 
 router.route('/posts')
@@ -557,11 +562,71 @@ router.route('/posts')
     });
 
 //COMMENTS REQUESTS HERE
+router.route('/comments/:post_id')
+    .get(authJwtController.isAuthenticated, function(req, res)
+    {
+        //console.log("Get comments on post: ", req.params.post_id);
+        if (!req.query || !req.params.post_id)
+            res.status(403).json({success: false, message: "Error: Incorrectly formatted body."});
+        Post.aggregate()
+            .match({_id: mongoose.Types.ObjectId(req.params.post_id)})
+            .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+            .exec(function(err, post) {
+                if (err) res.send(err);
+                if (!post) res.status(404).json({success: false, message: "Error: Post does not exist."});
+                //console.log("comments found: ", post[0].comments);
+                //console.log("post: ", post[0]);
+
+                res.status(200).json({success: true, comments: post[0].comments});
+            });
+    });
+
 router.route('/comments')
     .post(authJwtController.isAuthenticated, function (req, res) //POST (making a comment)
     {
+        console.log("body: ", req.body);
+        console.log("comment: ", req.body.comment);
+        console.log("post_id: ", req.body.post_id);
+        console.log("Conditions: " + (!req.body) +" "+ (!req.body.comment)+ " " + (!req.body.post_id));
+        /*if (!req.body || !req.body.comment || req.body.post_id) {
+            return res.status(403).json({success: false, message: "Error: Incorrectly formatted body."});
+        }*/
+        if (req.body.comment.length > 258)
+            return res.status(403).json({success: false, message: "Error: Comment length too long."});
+        if (req.body.comment.split('#').length-1 > 5)
+            return res.status(403).json({success: false, message: "Error: Too many hashtags."});
 
+        Post.findOne({_id: mongoose.Types.ObjectId(req.body.post_id)}, function (err, post)
+        {
+            if (err) return res.send(err);
+            if (!post) return res.status(404).json({success: false, message: "Error: Post does not exist."});
+            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec)
+            {
+                if (err) return res.send(err);
+                User.findOne({_id: mongoose.Types.ObjectId(dec.id)}, function (err, user)
+                {
+                    if (err) return res.send(err);
+                    if (!user) return res.status(404).json({success: false, message: "Error: User does not exist."});
+                    let newComment = new Comments();
+                    newComment.text = req.body.comment;
+                    newComment.user_id = user._id;
+                    newComment.username = user.username;
+                    newComment.post_id = post._id;
+                    newComment.save(function (err, comment)
+                    {
+                        //console.log("comment: ", comment);
+                        if (err) return res.send(err);
+                        if (!comment) return res.status(404).json({success: false, message: "Error: Comment did not create."});
+                        if (err) return res.send(err);
+                        //console.log("saved");
+                        return res.status(200).json({success: true, message: "Comment posted"});
+                    });
+                });
+            });
+        });
     });
+
+
 
 //FOLLOWERS REQUESTS HERE
 router.route('/followers')

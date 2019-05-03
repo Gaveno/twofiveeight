@@ -228,39 +228,35 @@ router.route('/posts/global')
             .skip(skip)
             .limit(numResults)
             .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
+            .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
             .exec(function (err, postsRaw)
             {
+                console.log("postsRaw: ", postsRaw);
                 if (err) res.send(err);
                 else if (postsRaw && postsRaw.length > 0)
                 {
                     // Extract only needed user info
                     for (let i = 0; i < postsRaw.length; i++)
                     {
-                        //console.log("previous post: ", postsRaw[i]);
                         let newPost = Object.assign({}, {
                             _id: postsRaw[i]._id,
                             username: postsRaw[i].user[0].username,
                             profPhoto: postsRaw[i].user[0].imgProfile,
                             verified: postsRaw[i].user[0].officialVerification,
                             createdAt: postsRaw[i].createdAt,
-                            commentCount: 0, // TO-DO: add comment count to the aggregate
+                            commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
                             text: postsRaw[i].text,
                             img: postsRaw[i].img,
                         });
-                        //console.log("alterned post: ", newPost);
                         postsRaw[i] = Object.assign({}, newPost);
                     }
-                    //console.log(JSON.stringify(postsRaw));
                     return res.status(200).json({success: true, feed: postsRaw});
-                    //const post = Object.assign(postRaw, {username:userFound.username});
-                    //return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
                 }
                 else
                 {
                     return res.status(404).json({success: false, message: "Error: no post found"});
                 }
             });
-        //res.status(200).json({success: true, message: "Get on posts global"});
     })
     .all(function(req, res) {
         return res.status(403).json("Error: Invalid operation on path.");

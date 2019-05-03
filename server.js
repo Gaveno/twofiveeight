@@ -53,21 +53,6 @@ router.route('/postjwt')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
-router.route('/users/:userId')
-    .get(authJwtController.isAuthenticated, function (req, res) {
-        var id = req.params.userId;
-        User.findById(id, function(err, user) {
-            if (err) res.send(err);
-
-            var userJson = JSON.stringify(user);
-            // return that user
-            res.json(user);
-        });
-    })
-    .all(function (req, res) {
-        console.log(req.body);
-        res.status(403).send({ success: false, message: "Operation not supported. Only GET allowed." });
-    });
 
 router.route('/users')
     .get(authJwtController.isAuthenticated, function (req, res)
@@ -113,10 +98,6 @@ router.route('/users')
             return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
     })
-    .all(function (req, res) {
-        console.log(req.body);
-        res.status(403).send({ success: false, message: "Operation not supported" });
-    });
 
 router.route("/users/photo")
     .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
@@ -139,9 +120,21 @@ router.route("/users/photo")
                 function(err, doc) {if (err) res.send(err); else console.log(doc);});*/
         });
     })
+
+router.route('/users/:userId')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        var id = req.params.userId;
+        User.findById(id, function(err, user) {
+            if (err) res.send(err);
+
+            var userJson = JSON.stringify(user);
+            // return that user
+            res.json(user);
+        });
+    })
     .all(function (req, res) {
         console.log(req.body);
-        res.status(403).send({ success: false, message: "Operation not supported" });
+        res.status(403).send({ success: false, message: "Operation not supported. Only GET allowed." });
     });
 
 router.route('/signup')

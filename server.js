@@ -262,6 +262,55 @@ router.route('/posts/global')
         return res.status(403).json("Error: Invalid operation on path.");
     });
 
+router.route('/posts/user/:username')
+    .get(authJwtController.isAuthenticated, function (req, res)
+    {
+        console.log("Getting posts from user: ", req.params.username);
+        let numResults = 10;
+        let skip = 0;
+        if (!req.params.username) return res.status(403).json({success: false, messsage: "Error: user not specified."});
+        if (req.query.skip && req.query.skip > 0)
+            skip = parseInt(req.query.skip);
+        //console.log("skip: ", skip);
+        User.findOne({ "username": req.params.username }, function (err, user) {
+            if (err) return res.send(err);
+            if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
+            console.log("user: ", user);
+            Post.aggregate()
+                .match({"user_id": user._id})
+                .sort({createdAt: -1})
+                .skip(skip)
+                .limit(numResults)
+                .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+                .exec(function (err, postsRaw) {
+                    //console.log("postsRaw: ", postsRaw);
+                    if (err) res.send(err);
+                    else if (postsRaw && postsRaw.length > 0) {
+                        // Extract only needed user info
+                        for (let i = 0; i < postsRaw.length; i++) {
+                            let newPost = Object.assign({}, {
+                                _id: postsRaw[i]._id,
+                                username: user.username,
+                                profPhoto: user.imgProfile,
+                                verified: user.officialVerification,
+                                createdAt: postsRaw[i].createdAt,
+                                commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
+                                text: postsRaw[i].text,
+                                img: postsRaw[i].img,
+                            });
+                            postsRaw[i] = Object.assign({}, newPost);
+                        }
+                        return res.status(200).json({success: true, feed: postsRaw});
+                    } else {
+                        return res.status(404).json({success: false, message: "Error: no post found"});
+                    }
+                });
+        });
+    })
+    .all(function(req, res) {
+        return res.status(403).json("Error: Invalid operation on path.");
+    });
+
 router.route('/posts')
 //POST (making a new post) //upload.single('multerUpload')
     .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)

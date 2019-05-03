@@ -113,35 +113,31 @@ router.route('/users')
             return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
     })
+    .all(function (req, res) {
+        console.log(req.body);
+        res.status(403).send({ success: false, message: "Operation not supported" });
+    });
+
+router.route("/users/photo")
     .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
-        if (req.body.userID && req.body.uploadProfilePhoto === "1")
+        if (req.file === undefined)
+            return res.status(500).json({success: false, message: 'No image provided'});
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
         {
-            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
-            {
-                if(err)
+            if(err) return res.status(403).json(err);
+            User.findByIdAndUpdate(decoded.id, {$set: {
+                'imgProfile.data': fs.readFileSync(req.file.path),
+                    'imgProfile.contentType': 'image/jpeg'}},
+                function(err, doc)
                 {
-                    return res.status(403).json(err);
-                }
-                else if (req.file === undefined)
-                {
-                    res.status(500).json({success: false, message: 'No image provided'});
-                }
-                else
-                {
-                    User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.data': fs.readFileSync(req.file.path)}},
-                        function(err, doc) {if (err) res.send(err); else console.log(doc);});
-                    User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.contentType': 'image/jpeg'}},
-                        function(err, doc) {if (err) res.send(err); else console.log(doc);});
+                    if (err) return res.send(err);
+                    console.log(doc);
                     return res.status(200).json({success: true, message: "Success: profile photo updated"});
-                }
-            })
-        }
-        else
-        {
-            console.log("put users: " + JSON.stringify(req.body));
-            return res.status(400).json({success: false, message: "Error: Invalid request"});
-        }
+                });
+            /*User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.contentType': 'image/jpeg'}},
+                function(err, doc) {if (err) res.send(err); else console.log(doc);});*/
+        });
     })
     .all(function (req, res) {
         console.log(req.body);

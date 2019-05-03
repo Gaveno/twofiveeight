@@ -291,7 +291,7 @@ router.route('/posts/user/:username')
                         }
                         return res.status(200).json({success: true, user: user, feed: postsRaw});
                     } else {
-                        return res.status(404).json({success: false, message: "Error: no post found"});
+                        return res.status(200).json({success: true, user: user, feed: []});
                     }
                 });
         });

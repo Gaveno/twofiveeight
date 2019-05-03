@@ -186,15 +186,15 @@ router.route('/signup')
 
 router.route('/signin')
     .post(function(req, res) {
-        var userNew = new User();
+        /*var userNew = new User();
         userNew.name = req.body.name;
         userNew.username = req.body.username;
-        userNew.password = req.body.password;
+        userNew.password = req.body.password;*/
 
-        User.findOne({ username: userNew.username }).select('name username password').exec(function(err, user) {
+        User.findOne({ username: req.body.username }).select('name username password').exec(function(err, user) {
             if (err) res.send(err);
             if (user) {
-                user.comparePassword(userNew.password, function (isMatch) {
+                user.comparePassword(req.body.password, function (isMatch) {
                     if (isMatch) {
                         var userToken = {id: user._id, username: user.username};
                         var token = jwt.sign(userToken, process.env.SECRET_KEY);
@@ -216,7 +216,7 @@ router.route('/signin')
     });
 
 router.route('/posts/global')
-    .get(function (req, res)
+    .get(authJwtController.isAuthenticated, function (req, res)
     {
         let numResults = 10;
         let skip = 0;

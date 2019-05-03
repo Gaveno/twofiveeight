@@ -272,7 +272,7 @@ router.route('/posts/user/:username')
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
         //console.log("skip: ", skip);
-        User.findOne({ "username": req.params.username }, function (err, user) {
+        User.findOne({ "username": req.params.username }, '-password', function (err, user) {
             if (err) return res.send(err);
             if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
             console.log("user: ", user);
@@ -300,7 +300,7 @@ router.route('/posts/user/:username')
                             });
                             postsRaw[i] = Object.assign({}, newPost);
                         }
-                        return res.status(200).json({success: true, feed: postsRaw});
+                        return res.status(200).json({success: true, user: user, feed: postsRaw});
                     } else {
                         return res.status(404).json({success: false, message: "Error: no post found"});
                     }

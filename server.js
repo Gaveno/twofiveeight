@@ -738,7 +738,7 @@ router.route('/follow/:username')
                //console.log("dec: ", dec);
                if (err) return res.send(err);
                if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
-               UserFollows.findOne({user_id: dec.user_id, follows_id: user._id}, (err, link) => {
+               UserFollows.findOne({user_id: dec.id, follows_id: user._id}, (err, link) => {
                    if (err) return res.send(err);
                    if (link) return res.status(403).json({
                        success: false, message: "Error: user is already following this user"
@@ -760,6 +760,24 @@ router.route('/follow/:username')
                });
            });
        });
+    })
+    .delete(authJwtController.isAuthenticated, function (req, res) {
+        if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
+        User.findOne({username: req.params.username}, (err, user) => {
+            if (err) return res.send(err);
+            if (!user) return res.status(404).json({success: false, message: "Error: user not found."});
+            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+                if (err) return res.send(err);
+                if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+                UserFollows.deleteOne({user_id: dec.id, follows_id: user._id}, (err) => {
+                    if (err) return res.send(err);
+                    return res.status(200).json({
+                        success: true,
+                        message: dec.username + " stopped following " + user.username
+                    });
+                });
+            });
+        });
     });
 
 router.route('/follows')
@@ -788,13 +806,31 @@ router.route('/follows')
         });
     });
 
+// get users that follow the logged in user
 router.route('/followers')
-    //GET (see your followers)
-    //GET (see who you follow)
-    //gets with different follows
-    .get(function(req,res)
-    {
-
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            if (err) return res.send(err);
+            if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+            UserFollows.find({follows_id: dec.id}, (err, links) => {
+                console.log("links: ", links);
+                if (err) return res.send(err);
+                if  (!links || links.length <= 0)
+                    return res.status(404).json({success: false, message: "Error: did not find follows list(1)"});
+                let linksReduced = [];
+                for (let i = 0; i < links.length; i++) {
+                    linksReduced.push(links[i].user_id);
+                }
+                User.find({_id: {$in: linksReduced}})
+                    .select('username imgProfile officialVerification')
+                    .exec((err, users) => {
+                        if (err) return res.send(err);
+                        if (!users || users.length <= 0)
+                            return res.status(404).json({success: false, message: "Error: did not find follows list(2)"});
+                        return res.status(200).json({success: true, users: users});
+                    })
+            });
+        });
     });
 
 router.route('/')

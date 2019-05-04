@@ -280,39 +280,48 @@ router.route('/posts/user/:username')
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
         //console.log("skip: ", skip);
-        User.findOne({ "username": req.params.username }, '-password', function (err, user) {
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
             if (err) return res.send(err);
-            if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
-            //console.log("user: ", user);
-            Post.aggregate()
-                .match({"user_id": user._id})
-                .sort({createdAt: -1})
-                .skip(skip)
-                .limit(numResults)
-                .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
-                .exec(function (err, postsRaw) {
-                    //console.log("postsRaw: ", postsRaw);
-                    if (err) res.send(err);
-                    else if (postsRaw && postsRaw.length > 0) {
-                        // Extract only needed user info
-                        for (let i = 0; i < postsRaw.length; i++) {
-                            let newPost = Object.assign({}, {
-                                _id: postsRaw[i]._id,
-                                username: user.username,
-                                profPhoto: user.imgProfile,
-                                verified: user.officialVerification,
-                                createdAt: postsRaw[i].createdAt,
-                                commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
-                                text: postsRaw[i].text,
-                                img: postsRaw[i].img,
+            if (!dec) return res.status(403).json({success: false, message: "Error: could not decode token."});
+            User.findOne({"username": req.params.username}, '-password', function (err, user) {
+                if (err) return res.send(err);
+                if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
+                //console.log("user: ", user);
+                Post.aggregate()
+                    .match({"user_id": user._id})
+                    .sort({createdAt: -1})
+                    .skip(skip)
+                    .limit(numResults)
+                    .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+                    .exec(function (err, postsRaw) {
+                        //console.log("postsRaw: ", postsRaw);
+                        if (err) res.send(err);
+                        else if (postsRaw && postsRaw.length > 0) {
+                            UserFollows.findOne({user_id: dec.user_id, follows_id: user._id}, (err, link) => {
+                                // Extract only needed user info
+                                let following = false;
+                                if (!err && link) following = true;
+                                for (let i = 0; i < postsRaw.length; i++) {
+                                    let newPost = Object.assign({}, {
+                                        _id: postsRaw[i]._id,
+                                        username: user.username,
+                                        profPhoto: user.imgProfile,
+                                        verified: user.officialVerification,
+                                        createdAt: postsRaw[i].createdAt,
+                                        commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
+                                        text: postsRaw[i].text,
+                                        img: postsRaw[i].img,
+                                        following: following
+                                    });
+                                    postsRaw[i] = Object.assign({}, newPost);
+                                }
+                                return res.status(200).json({success: true, user: user, feed: postsRaw});
                             });
-                            postsRaw[i] = Object.assign({}, newPost);
+                        } else {
+                            return res.status(200).json({success: true, user: user, feed: []});
                         }
-                        return res.status(200).json({success: true, user: user, feed: postsRaw});
-                    } else {
-                        return res.status(200).json({success: true, user: user, feed: []});
-                    }
-                });
+                    });
+            });
         });
     });
 
@@ -353,15 +362,13 @@ router.route('/posts/hashtag/:hashtag')
 
 router.route('/posts')
 //POST (making a new post) //upload.single('multerUpload')
-    .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
-    {
+    .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res) {
     // if format = wrong, else post.
         if (!req.body)
             return res.status(400).json({success: false, message: 'Incorrect post format'});
         if (res instanceof multer.MulterError)
             return res.status(500).json({success: false, message: 'Image upload error'});
-        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
-        {
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded) {
             if(err) return res.status(403).json(err);
             if (req.file === undefined)
                 return res.status(500).json({success: false, message: 'No image provided'});
@@ -372,27 +379,20 @@ router.route('/posts')
             //post.img.data = req.file;
             post.img.contentType = 'image/jpeg';
 
-            post.save(function(err, post)
-            {
-                if(err)
-                {
+            post.save(function(err, post) {
+                if(err) {
                     return res.status(403).json(err);
                 }
-                else
-                {
+                else {
                     // Parse hashtags
                     let parsed = req.body.text.split(" ");
-                    for (let i = 0; i < Math.min(parsed.length, 5); i++)
-                    {
-                        if (parsed[i][0] === "#" && parsed[i].length > 1)
-                        {
+                    for (let i = 0; i < Math.min(parsed.length, 5); i++) {
+                        if (parsed[i][0] === "#" && parsed[i].length > 1) {
                             //console.log("Hashtag found: ", parsed[i]);
-                            Hashtag.findOne({text: parsed[i]}, function(err, doc)
-                            {
+                            Hashtag.findOne({text: parsed[i]}, function(err, doc) {
                                 //console.log("After find: ", doc);
                                 if (err) return res.send(err);
-                                if (doc)
-                                {
+                                if (doc) {
                                     // If hashtag exists add link to existing hashtag
                                     //console.log("Created link to existing hashtag: ", doc);
                                     let newPostHashtag = new PostHashtag();
@@ -400,14 +400,12 @@ router.route('/posts')
                                     newPostHashtag.hashtag_id = doc._id;
                                     newPostHashtag.save((err) => console.log(err));
                                 }
-                                else
-                                {
+                                else {
                                     // If hashtag doesn't exist create it, then add link
                                     //console.log("Hashtag does not exist: ", parsed[0]);
                                     let newHashtag = new Hashtag();
                                     newHashtag.text = parsed[i];
-                                    newHashtag.save((err, newtag) =>
-                                    {
+                                    newHashtag.save((err, newtag) => {
                                         if (err) return res.send(err);
                                         if (newtag) {
                                             //console.log("Created link to new hashtag: ", newtag);
@@ -416,7 +414,7 @@ router.route('/posts')
                                             newPostHashtag.hashtag_id = newtag._id;
                                             newPostHashtag.save((err) => console.log(err));
                                         }
-                                    })
+                                    });
                                 }
                             })
                         }
@@ -733,9 +731,11 @@ router.route('/follow/:username')
     .post(authJwtController.isAuthenticated, function (req, res) {
        if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
        User.findOne({username: req.params.username}, (err, user) => {
+           //console.log("user._id: ", user._id);
            if (err) return res.send(err);
            if (!user) return res.status(404).json({success: false, message: "Error: user not found."});
            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+               //console.log("dec: ", dec);
                if (err) return res.send(err);
                if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
                UserFollows.findOne({user_id: dec.user_id, follows_id: user._id}, (err, link) => {
@@ -744,8 +744,10 @@ router.route('/follow/:username')
                        success: false, message: "Error: user is already following this user"
                    });
                    // Ready to create link.
+                   //console.log("dec.user_id: ", dec.id);
+                   //console.log("user._id: ", user._id);
                    let userFollows = new UserFollows();
-                   userFollows.user_id = dec.user_id;
+                   userFollows.user_id = dec.id;
                    userFollows.follows_id = user._id;
                    userFollows.save((err) => {
                        if (err) return res.send(err);
@@ -759,6 +761,33 @@ router.route('/follow/:username')
            });
        });
     });
+
+router.route('/follows')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            if (err) return res.send(err);
+            if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+            UserFollows.find({user_id: dec.id}, (err, links) => {
+                console.log("links: ", links);
+                if (err) return res.send(err);
+                if  (!links || links.length <= 0)
+                    return res.status(404).json({success: false, message: "Error: did not find follows list(1)"});
+                let linksReduced = [];
+                for (let i = 0; i < links.length; i++) {
+                    linksReduced.push(links[i].follows_id);
+                }
+                User.find({_id: {$in: linksReduced}})
+                    .select('username imgProfile officialVerification')
+                    .exec((err, users) => {
+                        if (err) return res.send(err);
+                        if (!users || users.length <= 0)
+                            return res.status(404).json({success: false, message: "Error: did not find follows list(2)"});
+                        return res.status(200).json({success: true, users: users});
+                })
+            });
+        });
+    });
+
 router.route('/followers')
     //GET (see your followers)
     //GET (see who you follow)

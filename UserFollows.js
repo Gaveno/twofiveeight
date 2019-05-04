@@ -10,7 +10,7 @@ mongoose.set('useCreateIndex', true);
 // user schema
 var UserFollowsSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true }, //ID- not username- of users
-    post_id: { type: Schema.Types.ObjectId, ref: "PostSchema", required: true }
+    follows_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true }
 });
 
 UserFollowsSchema.pre('save', function(next) {

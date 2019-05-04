@@ -9,6 +9,7 @@ const Post = require('./Posts');
 const Comments = require('./Comments');
 const Hashtag = require('./Hashtags');
 const PostHashtag = require('./PostHashtags');
+const UserFollows = require('./UserFollows');
 //const PostComments = require('./PostComments');
 const fs = require('fs');
 const multer  = require('multer');
@@ -55,12 +56,14 @@ router.route('/postjwt')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
-
+/********************************************************************/
+/******* TOP OF USERS ***********************************************/
+/********************************************************************/
 router.route('/users')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
         // TODO: DISABLE!
-        if (req.body.testingParamOn)
+        /*if (req.body.testingParamOn)
         {
             User.find(function (err, users) {
                 if (err) res.send(err);
@@ -68,7 +71,7 @@ router.route('/users')
                 res.json(users);
             })
         }
-        else if (req.body.infoByID && (req.body.includeProfilePhoto === "true" || req.body.includeProfilePhoto === undefined) )
+        else*/ if (req.body.infoByID && (req.body.includeProfilePhoto === "true" || req.body.includeProfilePhoto === undefined) )
         {
             User.findOne({_id: req.body.infoByID}, { password: 0}).exec(function (err, userFound)
             {
@@ -129,7 +132,7 @@ router.route("/users/photo")
             /*User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.contentType': 'image/jpeg'}},
                 function(err, doc) {if (err) res.send(err); else console.log(doc);});*/
         });
-    })
+    });
 
 router.route('/users/:userId')
     .get(authJwtController.isAuthenticated, function (req, res) {
@@ -147,6 +150,9 @@ router.route('/users/:userId')
         res.status(403).send({ success: false, message: "Operation not supported. Only GET allowed." });
     });
 
+/********************************************************************/
+/******* TOP OF AUTHENTICATION **************************************/
+/********************************************************************/
 router.route('/signup')
     .post(function(req, res) {
         if (!req.body.username || !req.body.password) {
@@ -214,6 +220,9 @@ router.route('/signin')
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
+/********************************************************************/
+/******* TOP OF POSTS ***********************************************/
+/********************************************************************/
 router.route('/posts/global')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
@@ -305,7 +314,7 @@ router.route('/posts/user/:username')
                     }
                 });
         });
-    })
+    });
 
 router.route('/posts/hashtag/:hashtag')
     .get(authJwtController.isAuthenticated, function (req, res)
@@ -603,11 +612,9 @@ router.route('/posts')
                     .sort({createdAt: -1})
                     .limit(req.body.resultsNumber)
                     .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
-                    .exec(function (err, postsRaw)
-                    {
+                    .exec(function (err, postsRaw) {
                         if (err) res.send(err);
-                        else if (postsRaw && postsRaw.length > 0)
-                        {
+                        else if (postsRaw && postsRaw.length > 0) {
                             // Extract only needed user info
                             postsRaw.forEach((post, i, postArray) => {
                                 let newPost = Object.assign({}, {
@@ -623,8 +630,7 @@ router.route('/posts')
                                     //const post = Object.assign(postRaw, {username:userFound.username});
                                     //return res.status(200).json({success: true, message: "Success: latest global post found UNFINISHED", post });
                         }
-                        else
-                        {
+                        else {
                             return res.status(404).json({success: false, message: "Error: no post found"});
                         }
                     })
@@ -635,8 +641,7 @@ router.route('/posts')
             (req.query.postScope === undefined || req.query.postScope === "user") &&
             (req.query.userID || req.query.userID !== "0") &&
             (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
-            (req.query.resultsNumber !== undefined ) )
-            {
+            (req.query.resultsNumber !== undefined ) ) {
                 console.log("entrance 8 "+JSON.stringify(req.body));
                 return res.status(501).json({success: false, message: "Error: method not implemented"});
             }
@@ -645,28 +650,26 @@ router.route('/posts')
             (req.query.postScope === undefined || req.query.postScope === "user") &&
             (req.query.userID || req.query.userID !== "0") &&
             (req.query.postTime || req.query.postTime !== "latest" || req.query.postTime !== "0") &&
-            (req.query.resultsNumber !== undefined ) )
-        {
+            (req.query.resultsNumber !== undefined ) ) {
             console.log("entrance 9 "+JSON.stringify(req.body));
             return res.status(501).json({success: false, message: "Error: method not implemented"});
         }
-        else
-        {
+        else {
             console.log("entrance 10 "+JSON.stringify(req.body));
             return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
     })
-    .all(function (req, res)
-    {
+    .all(function (req, res) {
         console.log(req.body);
         res = res.status(405);
         res.send("HTTP method not implemented");
     });
 
-//COMMENTS REQUESTS HERE
+/********************************************************************/
+/******* TOP OF COMMENTS ********************************************/
+/********************************************************************/
 router.route('/comments/:post_id')
-    .get(authJwtController.isAuthenticated, function(req, res)
-    {
+    .get(authJwtController.isAuthenticated, function(req, res) {
         //console.log("Get comments on post: ", req.params.post_id);
         if (!req.query || !req.params.post_id)
             res.status(403).json({success: false, message: "Error: Incorrectly formatted body."});
@@ -684,8 +687,7 @@ router.route('/comments/:post_id')
     });
 
 router.route('/comments')
-    .post(authJwtController.isAuthenticated, function (req, res) //POST (making a comment)
-    {
+    .post(authJwtController.isAuthenticated, function (req, res) {
         console.log("body: ", req.body);
         console.log("comment: ", req.body.comment);
         console.log("post_id: ", req.body.post_id);
@@ -698,15 +700,12 @@ router.route('/comments')
         if (req.body.comment.split('#').length-1 > 5)
             return res.status(403).json({success: false, message: "Error: Too many hashtags."});
 
-        Post.findOne({_id: mongoose.Types.ObjectId(req.body.post_id)}, function (err, post)
-        {
+        Post.findOne({_id: mongoose.Types.ObjectId(req.body.post_id)}, function (err, post) {
             if (err) return res.send(err);
             if (!post) return res.status(404).json({success: false, message: "Error: Post does not exist."});
-            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec)
-            {
+            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
                 if (err) return res.send(err);
-                User.findOne({_id: mongoose.Types.ObjectId(dec.id)}, function (err, user)
-                {
+                User.findOne({_id: mongoose.Types.ObjectId(dec.id)}, function (err, user) {
                     if (err) return res.send(err);
                     if (!user) return res.status(404).json({success: false, message: "Error: User does not exist."});
                     let newComment = new Comments();
@@ -714,8 +713,7 @@ router.route('/comments')
                     newComment.user_id = user._id;
                     newComment.username = user.username;
                     newComment.post_id = post._id;
-                    newComment.save(function (err, comment)
-                    {
+                    newComment.save(function (err, comment) {
                         //console.log("comment: ", comment);
                         if (err) return res.send(err);
                         if (!comment) return res.status(404).json({success: false, message: "Error: Comment did not create."});
@@ -728,9 +726,39 @@ router.route('/comments')
         });
     });
 
-
-
-//FOLLOWERS REQUESTS HERE
+/********************************************************************/
+/******* TOP OF FOLLOWERS/FOLLOWING *********************************/
+/********************************************************************/
+router.route('/follow/:username')
+    .post(authJwtController.isAuthenticated, function (req, res) {
+       if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
+       User.findOne({username: req.params.username}, (err, user) => {
+           if (err) return res.send(err);
+           if (!user) return res.status(404).json({success: false, message: "Error: user not found."});
+           jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+               if (err) return res.send(err);
+               if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+               UserFollows.findOne({user_id: dec.user_id, follows_id: user._id}, (err, link) => {
+                   if (err) return res.send(err);
+                   if (link) return res.status(403).json({
+                       success: false, message: "Error: user is already following this user"
+                   });
+                   // Ready to create link.
+                   let userFollows = new UserFollows();
+                   userFollows.user_id = dec.user_id;
+                   userFollows.follows_id = user._id;
+                   userFollows.save((err) => {
+                       if (err) return res.send(err);
+                       else {
+                           return res.status(200).json({
+                               success: true, message: dec.username + " successfully followed " + user.username
+                           });
+                       }
+                   })
+               });
+           });
+       });
+    });
 router.route('/followers')
     //GET (see your followers)
     //GET (see who you follow)

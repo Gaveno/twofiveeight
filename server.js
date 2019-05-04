@@ -102,20 +102,24 @@ router.route('/users')
 router.route("/users/photo")
     .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
+        if (res instanceof multer.MulterError)
+            res.status(500).json({success: false, message: 'Image upload error'});
         if (req.file === undefined)
             return res.status(500).json({success: false, message: 'No image provided'});
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
         {
             if(err) return res.status(403).json(err);
-            User.findByIdAndUpdate(decoded.id, {$set: {
-                'imgProfile.data': fs.readFileSync(req.file.path),
-                    'imgProfile.contentType': 'image/jpeg'}},
-                function(err, doc)
-                {
-                    if (err) return res.send(err);
-                    console.log(doc);
-                    return res.status(200).json({success: true, message: "Success: profile photo updated"});
-                });
+            let photoData = fs.readFileSync(req.file.path);
+            console.log("Photo data: ", photoData);
+            User.findByIdAndUpdate(decoded.id,
+                {$set: {'imgProfile.contentType': 'image/jpeg', 'imgProfile.data': photoData }}
+                , function(err, doc)
+            {
+                if (err) return res.send(err);
+                console.log(doc);
+                return res.status(200).json({success: true, message: "Success: profile photo updated"});
+            });
+
             /*User.findByIdAndUpdate(decoded.id, {$set: {'imgProfile.contentType': 'image/jpeg'}},
                 function(err, doc) {if (err) res.send(err); else console.log(doc);});*/
         });

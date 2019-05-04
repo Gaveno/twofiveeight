@@ -7,6 +7,8 @@ const User = require('./Users');
 const jwt = require('jsonwebtoken');
 const Post = require('./Posts');
 const Comments = require('./Comments');
+const Hashtag = require('./Hashtags');
+const PostHashtag = require('./PostHashtags');
 //const PostComments = require('./PostComments');
 const fs = require('fs');
 const multer  = require('multer');
@@ -228,7 +230,7 @@ router.route('/posts/global')
             .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
             .exec(function (err, postsRaw)
             {
-                console.log("postsRaw: ", postsRaw);
+                //console.log("postsRaw: ", postsRaw);
                 if (err) res.send(err);
                 else if (postsRaw && postsRaw.length > 0)
                 {
@@ -262,7 +264,7 @@ router.route('/posts/global')
 router.route('/posts/user/:username')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        console.log("Getting posts from user: ", req.params.username);
+        //console.log("Getting posts from user: ", req.params.username);
         let numResults = 10;
         let skip = 0;
         if (!req.params.username) return res.status(403).json({success: false, messsage: "Error: user not specified."});
@@ -272,7 +274,7 @@ router.route('/posts/user/:username')
         User.findOne({ "username": req.params.username }, '-password', function (err, user) {
             if (err) return res.send(err);
             if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
-            console.log("user: ", user);
+            //console.log("user: ", user);
             Post.aggregate()
                 .match({"user_id": user._id})
                 .sort({createdAt: -1})
@@ -304,6 +306,38 @@ router.route('/posts/user/:username')
                 });
         });
     })
+
+router.route('/posts/hashtag/:hashtag')
+    .get(authJwtController.isAuthenticated, function (req, res)
+    {
+        //console.log("Getting posts from user: ", req.params.username);
+        let numResults = 10;
+        let skip = 0;
+        if (!req.params.hashtag) return res.status(403).json({success: false, messsage: "Error: hashtag not specified."});
+        if (req.query.skip && req.query.skip > 0)
+            skip = parseInt(req.query.skip);
+        //console.log("skip: ", skip);
+        Hashtag.aggregate()
+            .match({ "text": "#"+req.params.hashtag })
+            .lookup({ from: 'posthashtags', localField: '_id', foreignField: 'hashtag_id', as: 'posthashtags'})
+            .unwind('posthashtags')
+            .lookup({ from: 'posts', localField: 'posthashtags', foreignField: '_id', as: "posts"})
+            .exec(function(err, result) {
+                console.log("result: ", result);
+                if (err) return res.send(err);
+                return res.status(200).json({success: true, message: "still in testing"});
+                /*if (posthashtags && posthashtags.length > 0) {
+                    Post.aggregate()
+                        .match({"_id": hashtag._id})
+                        .sort({createdAt: -1})
+                        .skip(skip)
+                        .limit(numResults)
+                        .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+                        .exec(function (err, postsRaw) {
+                        });
+                }*/
+            });
+    })
     .all(function(req, res) {
         return res.status(403).json("Error: Invalid operation on path.");
     });
@@ -312,54 +346,80 @@ router.route('/posts')
 //POST (making a new post) //upload.single('multerUpload')
     .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
-        // if format = wrong, else post.
+    // if format = wrong, else post.
         if (!req.body)
+            return res.status(400).json({success: false, message: 'Incorrect post format'});
+        if (res instanceof multer.MulterError)
+            return res.status(500).json({success: false, message: 'Image upload error'});
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
         {
-            res.status(400).json({success: false, message: 'Incorrect post format'});
-        }
-        else if (res instanceof multer.MulterError)
-        {
-            res.status(500).json({success: false, message: 'Image upload error'});
-        }
-        else
-        {
-            jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
+            if(err) return res.status(403).json(err);
+            if (req.file === undefined)
+                return res.status(500).json({success: false, message: 'No image provided'});
+            let post = new Post();
+            post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
+            post.text = req.body.text;
+            post.img.data = fs.readFileSync(req.file.path);
+            //post.img.data = req.file;
+            post.img.contentType = 'image/jpeg';
+
+            post.save(function(err, post)
             {
                 if(err)
                 {
                     return res.status(403).json(err);
                 }
-                else if (req.file === undefined)
-                {
-                    res.status(500).json({success: false, message: 'No image provided'});
-                }
                 else
                 {
-                    let post = new Post();
-                    post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
-                    post.text = req.body.text;
-                    post.img.data = fs.readFileSync(req.file.path);
-                    //post.img.data = req.file;
-                    post.img.contentType = 'image/jpeg';
-
-                    post.save(function(err)
+                    // Parse hashtags
+                    let parsed = req.body.text.split(" ");
+                    for (let i = 0; i < Math.min(parsed.length, 5); i++)
                     {
-                        if(err)
+                        if (parsed[i][0] === "#" && parsed[i].length > 1)
                         {
-                            return res.status(403).json(err);
+                            //console.log("Hashtag found: ", parsed[i]);
+                            Hashtag.findOne({text: parsed[i]}, function(err, doc)
+                            {
+                                //console.log("After find: ", doc);
+                                if (err) return res.send(err);
+                                if (doc)
+                                {
+                                    // If hashtag exists add link to existing hashtag
+                                    //console.log("Created link to existing hashtag: ", doc);
+                                    let newPostHashtag = new PostHashtag();
+                                    newPostHashtag.post_id = post._id;
+                                    newPostHashtag.hashtag_id = doc._id;
+                                    newPostHashtag.save((err) => console.log(err));
+                                }
+                                else
+                                {
+                                    // If hashtag doesn't exist create it, then add link
+                                    //console.log("Hashtag does not exist: ", parsed[0]);
+                                    let newHashtag = new Hashtag();
+                                    newHashtag.text = parsed[i];
+                                    newHashtag.save((err, newtag) =>
+                                    {
+                                        if (err) return res.send(err);
+                                        if (newtag) {
+                                            //console.log("Created link to new hashtag: ", newtag);
+                                            let newPostHashtag = new PostHashtag();
+                                            newPostHashtag.post_id = post._id;
+                                            newPostHashtag.hashtag_id = newtag._id;
+                                            newPostHashtag.save((err) => console.log(err));
+                                        }
+                                    })
+                                }
+                            })
                         }
-                        else
-                        {
-                            fs.unlink(req.file.path, (err) => {
-                                if (err) console.log("Failed to remove file.");
-                                else console.log(req.file.path+" was deleted after upload.");
-                            });
-                            return res.status(200).send({success: true, message: "Post added"});
-                        }
-                    })
+                    }
+                    fs.unlink(req.file.path, (err) => {
+                        if (err) console.log("Failed to remove file.");
+                        else console.log(req.file.path+" was deleted after upload.");
+                    });
+                    return res.status(200).send({success: true, message: "Post added"});
                 }
             })
-        }
+        })
     })
     .get(function(req,res) //get: global latest, feed latest, user latest, same but group of 10 from timestamp
     {

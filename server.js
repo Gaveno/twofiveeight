@@ -134,6 +134,25 @@ router.route("/users/photo")
         });
     });
 
+router.route('/users/about')
+    .put(authJwtController.isAuthenticated, function (req, res) {
+        let text = "";
+        if (req.body && req.body.text) text = req.body.text;
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
+        {
+            if(err) return res.status(403).json(err);
+            User.findByIdAndUpdate(decoded.id, {about: text}, {useFindAndModify: false}, function(err)
+            {
+                if (err) return res.send(err);
+                return res.status(200).json({success: true, message: "Success: about updated"});
+            });
+        });
+    })
+    .all(function (req, res) {
+        console.log(req.body);
+        res.status(403).send({ success: false, message: "Operation not supported. Only PUT allowed. ABOUT" });
+    });
+
 router.route('/users/:userId')
     .get(authJwtController.isAuthenticated, function (req, res) {
         var id = req.params.userId;

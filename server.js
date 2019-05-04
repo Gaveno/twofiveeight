@@ -97,7 +97,7 @@ router.route('/users')
         {
             return res.status(400).json({success: false, message: "Error: Invalid request"});
         }
-    })
+    });
 
 router.route("/users/photo")
     .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
@@ -117,6 +117,10 @@ router.route("/users/photo")
             {
                 if (err) return res.send(err);
                 console.log(doc);
+                fs.unlink(req.file.path, (err) => {
+                    if (err) console.log("Failed to remove file.");
+                    else console.log(req.file.path+" was deleted after upload.");
+                });
                 return res.status(200).json({success: true, message: "Success: profile photo updated"});
             });
 

@@ -153,16 +153,15 @@ router.route('/users/about')
         res.status(403).send({ success: false, message: "Operation not supported. Only PUT allowed. ABOUT" });
     });
 
-router.route('/users/:userId')
+router.route('/users/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        var id = req.params.userId;
-        User.findById(id, function(err, user) {
-            if (err) res.send(err);
-
-            var userJson = JSON.stringify(user);
-            // return that user
-            res.json(user);
-        });
+        if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
+        User.find({ username: { $regex: req.params.username, $options: "i"}})
+            .select('username imgProfile officialVerification')
+            .exec((err, users) => {
+                if (err) return res.send(err);
+                return res.status(200).json({ success: true, users: users });
+            })
     })
     .all(function (req, res) {
         console.log(req.body);
@@ -851,6 +850,7 @@ router.route('/follow/:username')
                //console.log("dec: ", dec);
                if (err) return res.send(err);
                if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+               if (user.username === dec.username) return res.status(403).json({success: false, message: "Error: cannot follow self."});
                UserFollows.findOne({user_id: dec.id, follows_id: user._id}, (err, link) => {
                    if (err) return res.send(err);
                    if (link) return res.status(403).json({

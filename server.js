@@ -180,7 +180,7 @@ router.route('/signup')
         else {
             var user = new User();
             user.firstName = req.body.name;
-            user.username = req.body.username;
+            user.username = req.body.username.toLowerCase();
             user.password = req.body.password;
             user.lastName = null;
             user.imgProfile = null;
@@ -215,7 +215,7 @@ router.route('/signin')
         userNew.username = req.body.username;
         userNew.password = req.body.password;*/
 
-        User.findOne({ username: req.body.username }).select('name username password').exec(function(err, user) {
+        User.findOne({ username: req.body.username.toLowerCase() }).select('name username password').exec(function(err, user) {
             if (err) res.send(err);
             if (user) {
                 user.comparePassword(req.body.password, function (isMatch) {
@@ -383,7 +383,7 @@ router.route('/posts/user/:username')
                                         if (err) return res.send(err);
                                         let following = false;
                                         if (!err && link) following = true;
-                                        console.log("following: ", following);
+                                        //console.log("following: ", following);
                                         // Extract only needed user info
                                         for (let i = 0; i < postsRaw.length; i++) {
                                             let newPost = Object.assign({}, {
@@ -426,14 +426,13 @@ router.route('/posts/hashtag/:hashtag')
         if (!req.params.hashtag) return res.status(403).json({success: false, messsage: "Error: hashtag not specified."});
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
-        //console.log("skip: ", skip);
+        console.log("Finding posts with hashtag: #", req.params.hashtag);
         Hashtag.aggregate()
             .match({ "text": "#"+req.params.hashtag })
             .lookup({ from: 'posthashtags', localField: '_id', foreignField: 'hashtag_id', as: 'posthashtags'})
-            .unwind('posthashtags')
-            .lookup({ from: 'posts', localField: 'posthashtags', foreignField: '_id', as: "posts"})
             .exec(function(err, result) {
                 console.log("result: ", result);
+                console.log("posthashtags: ", result.posthashtags);
                 if (err) return res.send(err);
                 return res.status(200).json({success: true, message: "still in testing"});
                 /*if (posthashtags && posthashtags.length > 0) {
@@ -481,6 +480,7 @@ router.route('/posts')
                     for (let i = 0; i < Math.min(parsed.length, 5); i++) {
                         if (parsed[i][0] === "#" && parsed[i].length > 1) {
                             //console.log("Hashtag found: ", parsed[i]);
+                            parsed[i] = parsed[i].toLowerCase();
                             Hashtag.findOne({text: parsed[i]}, function(err, doc) {
                                 //console.log("After find: ", doc);
                                 if (err) return res.send(err);

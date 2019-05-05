@@ -303,8 +303,8 @@ router.route('/posts/home')
             if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
             UserFollows.find({user_id: dec.id}, function(err, links) {
                 if (err) return res.send(err);
-                let userids = [dec.id];
-                console.log("userids: ", userids);
+                let userids = [mongoose.Types.ObjectId(dec.id)];
+                //console.log("userids: ", userids);
                 for (let i = 0; i < links.length; i++) {
                     //console.log("user: ", links[i]);
                     userids.push(links[i].follows_id);

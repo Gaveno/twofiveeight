@@ -378,6 +378,7 @@ router.route('/posts/user/:username')
                                 // Extract only needed user info
                                 let following = false;
                                 if (!err && link) following = true;
+                                console.log("following: ", following);
                                 for (let i = 0; i < postsRaw.length; i++) {
                                     let newPost = Object.assign({}, {
                                         _id: postsRaw[i]._id,
@@ -387,12 +388,12 @@ router.route('/posts/user/:username')
                                         createdAt: postsRaw[i].createdAt,
                                         commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
                                         text: postsRaw[i].text,
-                                        img: postsRaw[i].img,
-                                        following: following
+                                        img: postsRaw[i].img
                                     });
                                     postsRaw[i] = Object.assign({}, newPost);
                                 }
-                                return res.status(200).json({success: true, user: user, feed: postsRaw});
+                                let newUser = Object.assign({}, user._doc, {following: following});
+                                return res.status(200).json({success: true, user: newUser, feed: postsRaw});
                             });
                         } else {
                             return res.status(200).json({success: true, user: user, feed: []});
@@ -763,10 +764,10 @@ router.route('/comments/:post_id')
 
 router.route('/comments')
     .post(authJwtController.isAuthenticated, function (req, res) {
-        console.log("body: ", req.body);
+        /*console.log("body: ", req.body);
         console.log("comment: ", req.body.comment);
         console.log("post_id: ", req.body.post_id);
-        console.log("Conditions: " + (!req.body) +" "+ (!req.body.comment)+ " " + (!req.body.post_id));
+        console.log("Conditions: " + (!req.body) +" "+ (!req.body.comment)+ " " + (!req.body.post_id));*/
         /*if (!req.body || !req.body.comment || req.body.post_id) {
             return res.status(403).json({success: false, message: "Error: Incorrectly formatted body."});
         }*/

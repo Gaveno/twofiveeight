@@ -497,9 +497,11 @@ router.route('/posts')
                 else {
                     // Parse hashtags
                     let parsed = req.body.text.split(" ");
-                    for (let i = 0; i < Math.min(parsed.length, 5); i++) {
+                    let numFound = 0;
+                    for (let i = 0; i < parsed.length && numFound < 5; i++) {
                         if (parsed[i][0] === "#" && parsed[i].length > 1) {
-                            //console.log("Hashtag found: ", parsed[i]);
+                            console.log("Hashtag found: ", parsed[i]);
+                            numFound += 1;
                             parsed[i] = parsed[i].toLowerCase();
                             Hashtag.findOne({text: parsed[i]}, function(err, doc) {
                                 //console.log("After find: ", doc);

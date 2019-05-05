@@ -289,6 +289,64 @@ router.route('/posts/global')
         return res.status(403).json("Error: Invalid operation on path.");
     });
 
+router.route('/posts/home')
+    .get(authJwtController.isAuthenticated, function (req, res)
+    {
+        let numResults = 10;
+        let skip = 0;
+        if (req.query.skip && req.query.skip > 0)
+            skip = parseInt(req.query.skip);
+
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            //console.log("Get home feed for user: " + dec.username + " id: " + dec.id);
+            if (err) return res.send(err);
+            if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
+            UserFollows.find({user_id: dec.id}, function(err, links) {
+                if (err) return res.send(err);
+                let userids = [dec.id];
+                console.log("userids: ", userids);
+                for (let i = 0; i < links.length; i++) {
+                    //console.log("user: ", links[i]);
+                    userids.push(links[i].follows_id);
+                }
+                //console.log("User id list: ", userids);
+                Post.aggregate()
+                    .match({user_id: {$in: userids}})
+                    .sort({createdAt: -1})
+                    .skip(skip)
+                    .limit(numResults)
+                    .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
+                    .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+                    .exec(function (err, postsRaw) {
+                        //console.log("postsRaw: ", postsRaw);
+                        if (err) res.send(err);
+                        else if (postsRaw && postsRaw.length > 0) {
+                            // Extract only needed user info
+                            for (let i = 0; i < postsRaw.length; i++) {
+                                let newPost = Object.assign({}, {
+                                    _id: postsRaw[i]._id,
+                                    username: postsRaw[i].user[0].username,
+                                    profPhoto: postsRaw[i].user[0].imgProfile,
+                                    verified: postsRaw[i].user[0].officialVerification,
+                                    createdAt: postsRaw[i].createdAt,
+                                    commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
+                                    text: postsRaw[i].text,
+                                    img: postsRaw[i].img,
+                                });
+                                postsRaw[i] = Object.assign({}, newPost);
+                            }
+                            return res.status(200).json({success: true, feed: postsRaw});
+                        } else {
+                            return res.status(404).json({success: false, message: "Error: no post found"});
+                        }
+                    });
+            });
+        })
+    })
+    .all(function(req, res) {
+        return res.status(403).json("Error: Invalid operation on path.");
+    });
+
 router.route('/posts/user/:username')
     .get(authJwtController.isAuthenticated, function (req, res)
     {

@@ -256,15 +256,12 @@ router.route('/posts/global')
             .limit(numResults)
             .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
             .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
-            .exec(function (err, postsRaw)
-            {
+            .exec(function (err, postsRaw) {
                 //console.log("postsRaw: ", postsRaw);
                 if (err) res.send(err);
-                else if (postsRaw && postsRaw.length > 0)
-                {
+                else if (postsRaw && postsRaw.length > 0) {
                     // Extract only needed user info
-                    for (let i = 0; i < postsRaw.length; i++)
-                    {
+                    for (let i = 0; i < postsRaw.length; i++) {
                         let newPost = Object.assign({}, {
                             _id: postsRaw[i]._id,
                             username: postsRaw[i].user[0].username,
@@ -279,8 +276,7 @@ router.route('/posts/global')
                     }
                     return res.status(200).json({success: true, feed: postsRaw});
                 }
-                else
-                {
+                else {
                     return res.status(404).json({success: false, message: "Error: no post found"});
                 }
             });
@@ -360,7 +356,7 @@ router.route('/posts/user/:username')
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
             if (err) return res.send(err);
             if (!dec) return res.status(403).json({success: false, message: "Error: could not decode token."});
-            User.findOne({"username": req.params.username}, '-password', function (err, user) {
+            User.findOne({"username": req.params.username.toLowerCase()}, '-password', function (err, user) {
                 if (err) return res.send(err);
                 if (!user) return res.status(403).json({success: false, message: "Error: user does not exist."});
                 //console.log("user: ", user);
@@ -426,25 +422,50 @@ router.route('/posts/hashtag/:hashtag')
         if (!req.params.hashtag) return res.status(403).json({success: false, messsage: "Error: hashtag not specified."});
         if (req.query.skip && req.query.skip > 0)
             skip = parseInt(req.query.skip);
-        console.log("Finding posts with hashtag: #", req.params.hashtag);
+        //console.log("Finding posts with hashtag: #", req.params.hashtag);
         Hashtag.aggregate()
             .match({ "text": "#"+req.params.hashtag })
             .lookup({ from: 'posthashtags', localField: '_id', foreignField: 'hashtag_id', as: 'posthashtags'})
-            .exec(function(err, result) {
-                console.log("result: ", result);
-                console.log("posthashtags: ", result.posthashtags);
+            .exec(function(err, results) {
+                //console.log("result: ", results);
+                //console.log("posthashtags: ", results[0].posthashtags);
                 if (err) return res.send(err);
-                return res.status(200).json({success: true, message: "still in testing"});
-                /*if (posthashtags && posthashtags.length > 0) {
-                    Post.aggregate()
-                        .match({"_id": hashtag._id})
-                        .sort({createdAt: -1})
-                        .skip(skip)
-                        .limit(numResults)
-                        .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
-                        .exec(function (err, postsRaw) {
-                        });
-                }*/
+                let postids = [];
+                results.forEach((result) => {
+                    result.posthashtags.forEach((posthashtag) => {
+                        postids.push(posthashtag.post_id);
+                    });
+                });
+                Post.aggregate()
+                    .match({"_id": {$in: postids}})
+                    .sort({createdAt: -1})
+                    .skip(skip)
+                    .limit(numResults)
+                    .lookup({from: 'users', localField: 'user_id', foreignField: '_id', as: 'user'})
+                    .lookup({from: 'comments', localField: '_id', foreignField: 'post_id', as: 'comments'})
+                    .exec(function (err, postsRaw) {
+                        if (err) res.send(err);
+                        else if (postsRaw && postsRaw.length > 0) {
+                            // Extract only needed user info
+                            for (let i = 0; i < postsRaw.length; i++) {
+                                let newPost = Object.assign({}, {
+                                    _id: postsRaw[i]._id,
+                                    username: postsRaw[i].user[0].username,
+                                    profPhoto: postsRaw[i].user[0].imgProfile,
+                                    verified: postsRaw[i].user[0].officialVerification,
+                                    createdAt: postsRaw[i].createdAt,
+                                    commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
+                                    text: postsRaw[i].text,
+                                    img: postsRaw[i].img,
+                                });
+                                postsRaw[i] = Object.assign({}, newPost);
+                            }
+                            return res.status(200).json({success: true, feed: postsRaw});
+                        }
+                        else {
+                            return res.status(404).json({success: false, message: "Error: no post found"});
+                        }
+                    });
             });
     })
     .all(function(req, res) {

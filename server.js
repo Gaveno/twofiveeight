@@ -904,7 +904,7 @@ router.route('/follows/:username')
         if (!req.params || !req.params.username)
             return res.status(403).json({success: false, message: "Error: must provide username."});
         //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
-        User.findOne({username: req.params.username}, function (err, user) {
+        User.findOne({username: req.params.username.toLowerCase()}, function (err, user) {
             if (err) return res.send(err);
             if (!user) return res.status(403).json({success: false, message: "Error: unable to find user."});
             UserFollows.find({user_id: user._id}, (err, links) => {
@@ -936,7 +936,7 @@ router.route('/followers/:username')
         if (!req.params || !req.params.username)
             return res.status(403).json({success: false, message: "Error: must provide username."});
         //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
-        User.findOne({username: req.params.username}, function (err, user) {
+        User.findOne({username: req.params.username.toLowerCase()}, function (err, user) {
             if (err) return res.send(err);
             if (!user) return res.status(403).json({success: false, message: "Error: unable to find user."});
             UserFollows.find({follows_id: user._id}, (err, links) => {

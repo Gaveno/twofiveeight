@@ -895,13 +895,16 @@ router.route('/follow/:username')
         });
     });
 
-router.route('/follows')
+router.route('/follows/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+        if (!req.params || !req.params.username)
+            return res.status(403).json({success: false, message: "Error: must provide username."});
+        //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+        User.findOne({username: req.params.username}, function (err, user) {
             if (err) return res.send(err);
-            if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
-            UserFollows.find({user_id: dec.id}, (err, links) => {
-                console.log("links: ", links);
+            if (!user) return res.status(403).json({success: false, message: "Error: unable to find user."});
+            UserFollows.find({user_id: user._id}, (err, links) => {
+                //console.log("links: ", links);
                 if (err) return res.send(err);
                 if  (!links || links.length <= 0)
                     return res.status(404).json({success: false, message: "Error: did not find follows list(1)"});
@@ -909,9 +912,11 @@ router.route('/follows')
                 for (let i = 0; i < links.length; i++) {
                     linksReduced.push(links[i].follows_id);
                 }
+                //console.log("links reducded: ", linksReduced);
                 User.find({_id: {$in: linksReduced}})
                     .select('username imgProfile officialVerification')
                     .exec((err, users) => {
+                        console.log("users: ", users);
                         if (err) return res.send(err);
                         if (!users || users.length <= 0)
                             return res.status(404).json({success: false, message: "Error: did not find follows list(2)"});
@@ -922,13 +927,16 @@ router.route('/follows')
     });
 
 // get users that follow the logged in user
-router.route('/followers')
+router.route('/followers/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+        if (!req.params || !req.params.username)
+            return res.status(403).json({success: false, message: "Error: must provide username."});
+        //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+        User.findOne({username: req.params.username}, function (err, user) {
             if (err) return res.send(err);
-            if (!dec) return res.status(403).json({success: false, message: "Error: unable to decode token."});
-            UserFollows.find({follows_id: dec.id}, (err, links) => {
-                console.log("links: ", links);
+            if (!user) return res.status(403).json({success: false, message: "Error: unable to find user."});
+            UserFollows.find({follows_id: user._id}, (err, links) => {
+                //console.log("links: ", links);
                 if (err) return res.send(err);
                 if  (!links || links.length <= 0)
                     return res.status(404).json({success: false, message: "Error: did not find follows list(1)"});

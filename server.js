@@ -177,6 +177,9 @@ router.route('/signup')
             res.json({success: false, message: 'Please pass username and password.'});
         }
         else {
+            if (req.body.username.length > 10) return res.status(403).json({success: false, message: "Username too long."});
+            if (req.body.password.length < 8) return res.status(403).json({success: false, message: "Password too short."});
+            if (req.body.password.length > 20) return res.status(403).json({success: false, message: "Password too long."});
             var user = new User();
             user.firstName = req.body.name;
             user.username = req.body.username.toLowerCase();
@@ -209,10 +212,11 @@ router.route('/signup')
 
 router.route('/signin')
     .post(function(req, res) {
-        /*var userNew = new User();
-        userNew.name = req.body.name;
-        userNew.username = req.body.username;
-        userNew.password = req.body.password;*/
+        if (!req.body) return res.status(403).json({success: false, message: "Error: missing request body."});
+        if (!req.body.username || req.body.username.length <= 0)
+            return res.status(403).json({success: false, message: "Must provide username."});
+        if (!req.body.password || req.body.password.length <= 0)
+            return res.status(403).json({success: false, message: "Must provide password."});
 
         User.findOne({ username: req.body.username.toLowerCase() }).select('name username password').exec(function(err, user) {
             if (err) res.send(err);

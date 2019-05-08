@@ -265,11 +265,21 @@ router.route('/posts/global')
                 else if (postsRaw && postsRaw.length > 0) {
                     // Extract only needed user info
                     for (let i = 0; i < postsRaw.length; i++) {
+                        let usr;
+                        if (postsRaw[i].user[0])
+                            usr = Object.assign({}, postsRaw[i].user[0]);
+                        else {
+                            usr = Object.assign({}, {
+                                username: "usernotfound",
+                                imgProfile: null,
+                                officialVerification: false
+                            });
+                        }
                         let newPost = Object.assign({}, {
                             _id: postsRaw[i]._id,
-                            username: postsRaw[i].user[0].username,
-                            profPhoto: postsRaw[i].user[0].imgProfile,
-                            verified: postsRaw[i].user[0].officialVerification,
+                            username: usr.username,
+                            profPhoto: usr.imgProfile,
+                            verified: usr.officialVerification,
                             createdAt: postsRaw[i].createdAt,
                             commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
                             text: postsRaw[i].text,
@@ -322,11 +332,21 @@ router.route('/posts/home')
                         else if (postsRaw && postsRaw.length > 0) {
                             // Extract only needed user info
                             for (let i = 0; i < postsRaw.length; i++) {
+                                let usr;
+                                if (postsRaw[i].user[0])
+                                    usr = Object.assign({}, postsRaw[i].user[0]);
+                                else {
+                                    usr = Object.assign({}, {
+                                        username: "usernotfound",
+                                        imgProfile: null,
+                                        officialVerification: false
+                                    });
+                                }
                                 let newPost = Object.assign({}, {
                                     _id: postsRaw[i]._id,
-                                    username: postsRaw[i].user[0].username,
-                                    profPhoto: postsRaw[i].user[0].imgProfile,
-                                    verified: postsRaw[i].user[0].officialVerification,
+                                    username: usr.username,
+                                    profPhoto: usr.imgProfile,
+                                    verified: usr.officialVerification,
                                     createdAt: postsRaw[i].createdAt,
                                     commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
                                     text: postsRaw[i].text,
@@ -451,11 +471,21 @@ router.route('/posts/hashtag/:hashtag')
                         else if (postsRaw && postsRaw.length > 0) {
                             // Extract only needed user info
                             for (let i = 0; i < postsRaw.length; i++) {
+                                let usr;
+                                if (postsRaw[i].user[0])
+                                    usr = Object.assign({}, postsRaw[i].user[0]);
+                                else {
+                                    usr = Object.assign({}, {
+                                        username: "usernotfound",
+                                        imgProfile: null,
+                                        officialVerification: false
+                                    });
+                                }
                                 let newPost = Object.assign({}, {
                                     _id: postsRaw[i]._id,
-                                    username: postsRaw[i].user[0].username,
-                                    profPhoto: postsRaw[i].user[0].imgProfile,
-                                    verified: postsRaw[i].user[0].officialVerification,
+                                    username: usr.username,
+                                    profPhoto: usr.imgProfile,
+                                    verified: usr.officialVerification,
                                     createdAt: postsRaw[i].createdAt,
                                     commentCount: postsRaw[i].comments.length, // TO-DO: add comment count to the aggregate
                                     text: postsRaw[i].text,

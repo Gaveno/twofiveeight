@@ -173,6 +173,7 @@ router.route('/users/:username')
 /********************************************************************/
 router.route('/signup')
     .post(function(req, res) {
+        res.status(200).json({success: false, message: "Signup has been disabled"});
         if (!req.body.username || !req.body.password) {
             res.json({success: false, message: 'Please pass username and password.'});
         }

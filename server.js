@@ -762,6 +762,17 @@ router.route('/followers/:username')
         });
     });
 
+// Admin controls
+router.route('deletepostwithoutowner')
+    .delete(authJwtController.isAuthenticated, function (req, res) {
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            User.findOne({username: dec.username}, function (err, user) {
+                if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
+
+            });
+        });
+    });
+
 router.route('/')
     .all(function (req, res) {
         console.log(req.body);

@@ -173,7 +173,7 @@ router.route('/users/:username')
 /********************************************************************/
 router.route('/signup')
     .post(function(req, res) {
-        res.status(200).json({success: false, message: "Signup has been disabled"});
+        //res.status(200).json({success: false, message: "Signup has been disabled"});
         if (!req.body.username || !req.body.password) {
             res.json({success: false, message: 'Please pass username and password.'});
         }
@@ -192,6 +192,7 @@ router.route('/signup')
             user.about = null;
             user.officialVerification = false;
             user.isAdmin = false;
+            user.disabled = true;
             // save the user
             user.save(function(err) {
                 if (err) {
@@ -219,14 +220,20 @@ router.route('/signin')
         if (!req.body.password || req.body.password.length <= 0)
             return res.status(403).json({success: false, message: "Must provide password."});
 
-        User.findOne({ username: req.body.username.toLowerCase() }).select('name username password').exec(function(err, user) {
+        User.findOne({ username: req.body.username.toLowerCase() }).select('name username password disabled').exec(function(err, user) {
             if (err) res.send(err);
             if (user) {
                 user.comparePassword(req.body.password, function (isMatch) {
                     if (isMatch) {
-                        var userToken = {id: user._id, username: user.username};
-                        var token = jwt.sign(userToken, process.env.SECRET_KEY);
-                        res.json({success: true, token: 'JWT ' + token});
+                        console.log("user: ", user);
+                        if (!user.disabled) {
+                            var userToken = {id: user._id, username: user.username};
+                            var token = jwt.sign(userToken, process.env.SECRET_KEY);
+                            res.json({success: true, token: 'JWT ' + token});
+                        }
+                        else {
+                            res.status(200).json({success: false, message: "Awaiting verification from moderators."});
+                        }
                     }
                     else {
                         res.status(401).send({success: false, message: 'Authentication failed.'});

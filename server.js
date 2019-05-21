@@ -400,18 +400,18 @@ router.route('/posts/user/:username')
                     .exec(function (err, postsRaw) {
                         //console.log("postsRaw: ", postsRaw);
                         if (err) return res.send(err);
-                        else if (postsRaw && postsRaw.length > 0) {
-                            UserFollows.findOne({user_id: dec.id, follows_id: user._id}, (err, link) => {
+                        UserFollows.findOne({user_id: dec.id, follows_id: user._id}, (err, link) => {
+                            // get number of followers
+                            UserFollows.countDocuments({follows_id: user._id}, (err, followersCount) => {
+                                if (err) return res.send(err);
                                 // get number of followers
-                                UserFollows.count({follows_id: user._id}, (err, followersCount) => {
+                                UserFollows.countDocuments({user_id: user._id}, (err, followingCount) => {
                                     if (err) return res.send(err);
-                                    // get number of followers
-                                    UserFollows.count({user_id: user._id}, (err, followingCount) => {
-                                        if (err) return res.send(err);
-                                        let following = false;
-                                        if (!err && link) following = true;
-                                        //console.log("following: ", following);
-                                        // Extract only needed user info
+                                    let following = false;
+                                    if (!err && link) following = true;
+                                    //console.log("following: ", following);
+                                    // Extract only needed user info
+                                    if (postsRaw) {
                                         for (let i = 0; i < postsRaw.length; i++) {
                                             let newPost = Object.assign({}, {
                                                 _id: postsRaw[i]._id,
@@ -425,20 +425,18 @@ router.route('/posts/user/:username')
                                             });
                                             postsRaw[i] = Object.assign({}, newPost);
                                         }
-                                        let newUser = Object.assign(
-                                            {}, user._doc, {
-                                                    following: following,
-                                                    followersCount: followersCount,
-                                                    followingCount: followingCount
-                                                }
-                                            );
-                                        return res.status(200).json({success: true, user: newUser, feed: postsRaw});
-                                    });
+                                    }
+                                    let newUser = Object.assign(
+                                        {}, user._doc, {
+                                                following: following,
+                                                followersCount: followersCount,
+                                                followingCount: followingCount
+                                            }
+                                        );
+                                    return res.status(200).json({success: true, user: newUser, feed: postsRaw});
                                 });
                             });
-                        } else {
-                            return res.status(200).json({success: true, user: user, feed: []});
-                        }
+                        });
                     });
             });
         });

@@ -808,7 +808,7 @@ router.route('/admin/comment/:commentid')
             User.findOne({username: dec.username}, function (err, user) {
                 // Verify user is an admin
                 if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
-                Comment.findByIdAndDelete(req.params.commentid, function(err, comment) {
+                Comments.findByIdAndDelete(req.params.commentid, function(err, comment) {
                     if (err) return res.send(err);
                     if (!comment) return res.status(404).json({success: false, message: "Error: comment not found."});
                     return res.status(200).json({success: true, message: "Successfully deleted comment."});

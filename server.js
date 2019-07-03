@@ -192,7 +192,7 @@ router.route('/signup')
             user.about = null;
             user.officialVerification = false;
             user.isAdmin = false;
-            user.disabled = true;
+            user.disabled = false;
             // save the user
             user.save(function(err) {
                 if (err) {
@@ -521,65 +521,67 @@ router.route('/posts')
             return res.status(500).json({success: false, message: 'Image upload error'});
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded) {
             if(err) return res.status(403).json(err);
-            if (req.file === undefined)
-                return res.status(500).json({success: false, message: 'No image provided'});
-            let post = new Post();
-            post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
-            post.text = req.body.text;
-            post.img.data = fs.readFileSync(req.file.path);
-            //post.img.data = req.file;
-            post.img.contentType = 'image/jpeg';
+            User.findById(decoded.id, function(err, user) {
+                if (err) return res.send(err);
+                if (user.disabled) return res.status(401).json({success: false, message: "Error: user is disabled."});
+                if (req.file === undefined)
+                    return res.status(500).json({success: false, message: 'No image provided'});
+                let post = new Post();
+                post.user_id = decoded.id; //Set author ID to user ID (This is NOT the username)
+                post.text = req.body.text;
+                post.img.data = fs.readFileSync(req.file.path);
+                //post.img.data = req.file;
+                post.img.contentType = 'image/jpeg';
 
-            post.save(function(err, post) {
-                if(err) {
-                    return res.status(403).json(err);
-                }
-                else {
-                    // Parse hashtags
-                    let parsed = req.body.text.split(" ");
-                    let numFound = 0;
-                    for (let i = 0; i < parsed.length && numFound < 5; i++) {
-                        if (parsed[i][0] === "#" && parsed[i].length > 1) {
-                            console.log("Hashtag found: ", parsed[i]);
-                            numFound += 1;
-                            parsed[i] = parsed[i].toLowerCase();
-                            Hashtag.findOne({text: parsed[i]}, function(err, doc) {
-                                //console.log("After find: ", doc);
-                                if (err) return res.send(err);
-                                if (doc) {
-                                    // If hashtag exists add link to existing hashtag
-                                    //console.log("Created link to existing hashtag: ", doc);
-                                    let newPostHashtag = new PostHashtag();
-                                    newPostHashtag.post_id = post._id;
-                                    newPostHashtag.hashtag_id = doc._id;
-                                    newPostHashtag.save((err) => console.log(err));
-                                }
-                                else {
-                                    // If hashtag doesn't exist create it, then add link
-                                    //console.log("Hashtag does not exist: ", parsed[0]);
-                                    let newHashtag = new Hashtag();
-                                    newHashtag.text = parsed[i];
-                                    newHashtag.save((err, newtag) => {
-                                        if (err) return res.send(err);
-                                        if (newtag) {
-                                            //console.log("Created link to new hashtag: ", newtag);
-                                            let newPostHashtag = new PostHashtag();
-                                            newPostHashtag.post_id = post._id;
-                                            newPostHashtag.hashtag_id = newtag._id;
-                                            newPostHashtag.save((err) => console.log(err));
-                                        }
-                                    });
-                                }
-                            })
+                post.save(function (err, post) {
+                    if (err) {
+                        return res.status(403).json(err);
+                    } else {
+                        // Parse hashtags
+                        let parsed = req.body.text.split(" ");
+                        let numFound = 0;
+                        for (let i = 0; i < parsed.length && numFound < 5; i++) {
+                            if (parsed[i][0] === "#" && parsed[i].length > 1) {
+                                console.log("Hashtag found: ", parsed[i]);
+                                numFound += 1;
+                                parsed[i] = parsed[i].toLowerCase();
+                                Hashtag.findOne({text: parsed[i]}, function (err, doc) {
+                                    //console.log("After find: ", doc);
+                                    if (err) return res.send(err);
+                                    if (doc) {
+                                        // If hashtag exists add link to existing hashtag
+                                        //console.log("Created link to existing hashtag: ", doc);
+                                        let newPostHashtag = new PostHashtag();
+                                        newPostHashtag.post_id = post._id;
+                                        newPostHashtag.hashtag_id = doc._id;
+                                        newPostHashtag.save((err) => console.log(err));
+                                    } else {
+                                        // If hashtag doesn't exist create it, then add link
+                                        //console.log("Hashtag does not exist: ", parsed[0]);
+                                        let newHashtag = new Hashtag();
+                                        newHashtag.text = parsed[i];
+                                        newHashtag.save((err, newtag) => {
+                                            if (err) return res.send(err);
+                                            if (newtag) {
+                                                //console.log("Created link to new hashtag: ", newtag);
+                                                let newPostHashtag = new PostHashtag();
+                                                newPostHashtag.post_id = post._id;
+                                                newPostHashtag.hashtag_id = newtag._id;
+                                                newPostHashtag.save((err) => console.log(err));
+                                            }
+                                        });
+                                    }
+                                })
+                            }
                         }
+                        fs.unlink(req.file.path, (err) => {
+                            if (err) console.log("Failed to remove file.");
+                            else console.log(req.file.path + " was deleted after upload.");
+                        });
+                        return res.status(200).send({success: true, message: "Post added"});
                     }
-                    fs.unlink(req.file.path, (err) => {
-                        if (err) console.log("Failed to remove file.");
-                        else console.log(req.file.path+" was deleted after upload.");
-                    });
-                    return res.status(200).send({success: true, message: "Post added"});
-                }
-            })
+                })
+            });
         })
     })
     .all(function (req, res) {
@@ -631,6 +633,7 @@ router.route('/comments')
                 User.findOne({_id: mongoose.Types.ObjectId(dec.id)}, function (err, user) {
                     if (err) return res.send(err);
                     if (!user) return res.status(404).json({success: false, message: "Error: User does not exist."});
+                    if (user.disabled) return res.status(401).json({success: false, message: "Error: User is disabled."});
                     let newComment = new Comments();
                     newComment.text = req.body.comment;
                     newComment.user_id = user._id;
@@ -768,12 +771,67 @@ router.route('/followers/:username')
     });
 
 // Admin controls
-router.route('deletepostwithoutowner')
+router.route('/deletepostwithoutowner')
     .delete(authJwtController.isAuthenticated, function (req, res) {
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
             User.findOne({username: dec.username}, function (err, user) {
                 if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
+                // TO-DO: maybe implement this... Maybe not
+            });
+        });
+    });
 
+router.route('/admin/post/:postid')
+    .delete(authJwtController.isAuthenticated, function (req, res) {
+        if (!req.params || !req.params.postid) res.status(403).json({success: false, message: "Error: missing params."});
+        // Get current user
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            // Find current user in DB
+            User.findOne({username: dec.username}, function (err, user) {
+                // Verify user is an admin
+                if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
+                Post.findByIdAndDelete(req.params.postid, function(err, post) {
+                    if (err) return res.send(err);
+                    if (!post) return res.status(404).json({success: false, message: "Error: post not found."});
+                    return res.status(200).json({success: true, message: "Successfully deleted post."});
+                });
+            });
+        });
+    });
+
+router.route('/admin/comment/:commentid')
+    .delete(authJwtController.isAuthenticated, function (req, res) {
+        if (!req.params || !req.params.commentid) res.status(403).json({success: false, message: "Error: missing params."});
+        // Get current user
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            // Find current user in DB
+            User.findOne({username: dec.username}, function (err, user) {
+                // Verify user is an admin
+                if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
+                Comment.findByIdAndDelete(req.params.commentid, function(err, comment) {
+                    if (err) return res.send(err);
+                    if (!comment) return res.status(404).json({success: false, message: "Error: comment not found."});
+                    return res.status(200).json({success: true, message: "Successfully deleted comment."});
+                });
+            });
+        });
+    });
+
+router.route('/admin/user/:userid')
+    .delete(authJwtController.isAuthenticated, function (req, res) {
+        if (!req.params || !req.params.userid) res.status(403).json({success: false, message: "Error: missing params."});
+        // Get current user
+        jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
+            // Find current user in DB
+            User.findOne({username: dec.username}, function (err, user) {
+                // Verify user is an admin
+                if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
+                // Ban user (disable account)
+                User.findByIdAndUpdate(req.params.userid, {disabled: true}, function(err, buser) {
+                    if (err) return res.send(err);
+                    if (!buser) return res.status(404).json({success: false, message: "Error: user not found."});
+                    return res.status(200).json({success: true, message: "Successfully banned user."});
+                });
             });
         });
     });

@@ -220,7 +220,7 @@ router.route('/signin')
         if (!req.body.password || req.body.password.length <= 0)
             return res.status(403).json({success: false, message: "Must provide password."});
 
-        User.findOne({ username: req.body.username.toLowerCase() }).select('name username password disabled').exec(function(err, user) {
+        User.findOne({ username: req.body.username.toLowerCase() }).select('name username password disabled isAdmin').exec(function(err, user) {
             if (err) res.send(err);
             if (user) {
                 user.comparePassword(req.body.password, function (isMatch) {
@@ -229,7 +229,7 @@ router.route('/signin')
                         if (!user.disabled) {
                             var userToken = {id: user._id, username: user.username};
                             var token = jwt.sign(userToken, process.env.SECRET_KEY);
-                            res.json({success: true, token: 'JWT ' + token});
+                            res.json({success: true, token: 'JWT ' + token, isAdmin: user.isAdmin});
                         }
                         else {
                             res.status(200).json({success: false, message: "Awaiting verification from moderators."});
@@ -270,7 +270,7 @@ router.route('/posts/global')
             .exec(function (err, postsRaw) {
                 //console.log("postsRaw: ", postsRaw);
                 if (err) res.send(err);
-                else if (postsRaw && postsRaw.length > 0) {
+                else if (postsRaw) {
                     // Extract only needed user info
                     for (let i = 0; i < postsRaw.length; i++) {
                         let usr;
@@ -337,7 +337,7 @@ router.route('/posts/home')
                     .exec(function (err, postsRaw) {
                         //console.log("postsRaw: ", postsRaw);
                         if (err) res.send(err);
-                        else if (postsRaw && postsRaw.length > 0) {
+                        else if (postsRaw) {
                             // Extract only needed user info
                             for (let i = 0; i < postsRaw.length; i++) {
                                 let usr;

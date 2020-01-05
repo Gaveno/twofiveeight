@@ -12,7 +12,7 @@ var PostSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: "UserSchema", required: true },
     img: { data: Buffer, contentType: String},
     text: { type: String },
-    createdAt: { type: Date, expires: 604800, default: Date.now }
+    createdAt: { type: Date, expires: '14d', default: Date.now }
 });
 
 PostSchema.pre('save', function(next) {

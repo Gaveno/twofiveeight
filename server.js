@@ -17,8 +17,20 @@ const multer  = require('multer');
 mongoose = require('mongoose');
 
 const app = express();
+const allowedOrigins = ['http://api.2fiveeight.com',
+    'http://2fiveeight.com'];
 app.use(cors({
-    origin: 'http://2fiveeight.com'
+    origin: function(origin, callback){
+        // allow requests with no origin
+        // (like mobile apps or curl requests)
+        if(!origin) return callback(null, true);
+        if(allowedOrigins.indexOf(origin) === -1){
+            let msg = 'The CORS policy for this site does not ' +
+                'allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    }
 }));
 module.exports = app; // for testing
 app.use(bodyParser({limit: '5mb'}));

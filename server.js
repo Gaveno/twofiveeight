@@ -173,6 +173,7 @@ router.route('/users/:username')
 /********************************************************************/
 router.route('/signup')
     .post(function(req, res) {
+        res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
         //res.status(200).json({success: false, message: "Signup has been disabled"});
         if (!req.body.username || !req.body.password) {
             res.json({success: false, message: 'Please pass username and password.'});
@@ -214,6 +215,7 @@ router.route('/signup')
 
 router.route('/signin')
     .post(function(req, res) {
+        res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
         if (!req.body) return res.status(403).json({success: false, message: "Error: missing request body."});
         if (!req.body.username || req.body.username.length <= 0)
             return res.status(403).json({success: false, message: "Must provide username."});
@@ -256,6 +258,7 @@ router.route('/signin')
 router.route('/posts/global')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
+        res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
         let numResults = 10;
         let skip = 0;
         if (req.query.skip && req.query.skip > 0)

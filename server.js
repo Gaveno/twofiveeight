@@ -17,7 +17,9 @@ const multer  = require('multer');
 mongoose = require('mongoose');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'http://2fiveeight.com'
+}));
 module.exports = app; // for testing
 app.use(bodyParser({limit: '5mb'}));
 app.use(bodyParser.json());

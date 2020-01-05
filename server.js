@@ -43,7 +43,7 @@ const router = express.Router();
 
 router.route('/postjwt')
     .post(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res = res.status(200);
         if (req.get('Content-Type')) {
@@ -53,7 +53,7 @@ router.route('/postjwt')
         res.send(req.body);
     })
     .all(function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
@@ -64,7 +64,7 @@ router.route('/postjwt')
 router.route('/users')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (req.body.infoByID && (req.body.includeProfilePhoto === "true" || req.body.includeProfilePhoto === undefined) )
         {
             User.findOne({_id: req.body.infoByID}, { password: 0}).exec(function (err, userFound)
@@ -101,7 +101,7 @@ router.route('/users')
 router.route("/users/photo")
     .put(authJwtController.isAuthenticated, upload.single('file'), function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (res instanceof multer.MulterError)
             res.status(500).json({success: false, message: 'Image upload error'});
         if (req.file === undefined)
@@ -131,7 +131,7 @@ router.route("/users/photo")
 
 router.route('/users/about')
     .put(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         let text = "";
         if (req.body && req.body.text) text = req.body.text;
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, decoded)
@@ -145,14 +145,14 @@ router.route('/users/about')
         });
     })
     .all(function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res.status(403).send({ success: false, message: "Operation not supported. Only PUT allowed. ABOUT" });
     });
 
 router.route('/users/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
         User.find({ username: { $regex: req.params.username, $options: "i"}})
             .select('username imgProfile officialVerification')
@@ -162,7 +162,7 @@ router.route('/users/:username')
             })
     })
     .all(function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res.status(403).send({ success: false, message: "Operation not supported. Only GET allowed." });
     });
@@ -172,7 +172,7 @@ router.route('/users/:username')
 /********************************************************************/
 router.route('/signup')
     .post(function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         //res.status(200).json({success: false, message: "Signup has been disabled"});
         if (!req.body.username || !req.body.password) {
             res.json({success: false, message: 'Please pass username and password.'});
@@ -209,13 +209,13 @@ router.route('/signup')
     })
     .all(function (req, res) {
         console.log(req.body);
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         res.status(403).send({ success: false, message: "Operation not supported. Only POST allowed." });
     });
 
 router.route('/signin')
     .post(function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.body) return res.status(403).json({success: false, message: "Error: missing request body."});
         if (!req.body.username || req.body.username.length <= 0)
             return res.status(403).json({success: false, message: "Must provide username."});
@@ -258,7 +258,7 @@ router.route('/signin')
 router.route('/posts/global')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         let numResults = 10;
         let skip = 0;
         if (req.query.skip && req.query.skip > 0)
@@ -306,14 +306,14 @@ router.route('/posts/global')
             });
     })
     .all(function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         return res.status(403).json("Error: Invalid operation on path.");
     });
 
 router.route('/posts/home')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         let numResults = 10;
         let skip = 0;
         if (req.query.skip && req.query.skip > 0)
@@ -376,14 +376,14 @@ router.route('/posts/home')
         })
     })
     .all(function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         return res.status(403).json("Error: Invalid operation on path.");
     });
 
 router.route('/posts/user/:username')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         //console.log("Getting posts from user: ", req.params.username);
         let numResults = 10;
         let skip = 0;
@@ -452,7 +452,7 @@ router.route('/posts/user/:username')
 router.route('/posts/hashtag/:hashtag')
     .get(authJwtController.isAuthenticated, function (req, res)
     {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         //console.log("Getting posts from user: ", req.params.username);
         let numResults = 10;
         let skip = 0;
@@ -516,7 +516,7 @@ router.route('/posts/hashtag/:hashtag')
             });
     })
     .all(function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         return res.status(403).json("Error: Invalid operation on path.");
     });
 
@@ -524,7 +524,7 @@ router.route('/posts')
 //POST (making a new post) //upload.single('multerUpload')
     .post(authJwtController.isAuthenticated, upload.single('file'), function (req, res) {
     // if format = wrong, else post.
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.body)
             return res.status(400).json({success: false, message: 'Incorrect post format'});
         if (res instanceof multer.MulterError)
@@ -595,7 +595,7 @@ router.route('/posts')
         })
     })
     .all(function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res = res.status(405);
         res.status(404).json({success: false, message: "HTTP method not implemented"});
@@ -606,7 +606,7 @@ router.route('/posts')
 /********************************************************************/
 router.route('/comments/:post_id')
     .get(authJwtController.isAuthenticated, function(req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         //console.log("Get comments on post: ", req.params.post_id);
         if (!req.query || !req.params.post_id)
             res.status(403).json({success: false, message: "Error: Incorrectly formatted body."});
@@ -625,7 +625,7 @@ router.route('/comments/:post_id')
 
 router.route('/comments')
     .post(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         /*console.log("body: ", req.body);
         console.log("comment: ", req.body.comment);
         console.log("post_id: ", req.body.post_id);
@@ -670,7 +670,7 @@ router.route('/comments')
 /********************************************************************/
 router.route('/follow/:username')
     .post(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
        if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
        User.findOne({username: req.params.username}, (err, user) => {
            //console.log("user._id: ", user._id);
@@ -705,7 +705,7 @@ router.route('/follow/:username')
        });
     })
     .delete(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params.username) return res.status(403).json({success: false, message: "Error: missing username."});
         User.findOne({username: req.params.username}, (err, user) => {
             if (err) return res.send(err);
@@ -726,7 +726,7 @@ router.route('/follow/:username')
 
 router.route('/follows/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params || !req.params.username)
             return res.status(403).json({success: false, message: "Error: must provide username."});
         //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
@@ -759,7 +759,7 @@ router.route('/follows/:username')
 // get users that follow the logged in user
 router.route('/followers/:username')
     .get(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params || !req.params.username)
             return res.status(403).json({success: false, message: "Error: must provide username."});
         //jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
@@ -790,7 +790,7 @@ router.route('/followers/:username')
 // Admin controls
 router.route('/deletepostwithoutowner')
     .delete(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
             User.findOne({username: dec.username}, function (err, user) {
                 if (!user.isAdmin) return res.status(401).json({success: false, message: "Admin control only."});
@@ -801,7 +801,7 @@ router.route('/deletepostwithoutowner')
 
 router.route('/admin/post/:postid')
     .delete(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params || !req.params.postid) res.status(403).json({success: false, message: "Error: missing params."});
         // Get current user
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
@@ -820,7 +820,7 @@ router.route('/admin/post/:postid')
 
 router.route('/admin/comment/:commentid')
     .delete(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params || !req.params.commentid) res.status(403).json({success: false, message: "Error: missing params."});
         // Get current user
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
@@ -839,7 +839,7 @@ router.route('/admin/comment/:commentid')
 
 router.route('/admin/user/:userid')
     .delete(authJwtController.isAuthenticated, function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         if (!req.params || !req.params.userid) res.status(403).json({success: false, message: "Error: missing params."});
         // Get current user
         jwt.verify(req.headers.authorization.substring(4), process.env.SECRET_KEY, function(err, dec) {
@@ -859,7 +859,7 @@ router.route('/admin/user/:userid')
 
 router.route('/')
     .all(function (req, res) {
-        res = res.setHeader("Access-Control-Allow-Origin", "http://2fiveeight.com");
+
         console.log(req.body);
         res.status(404).send({ success: false, message: "Invalid path."});
     });

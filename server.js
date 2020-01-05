@@ -17,12 +17,13 @@ const multer  = require('multer');
 mongoose = require('mongoose');
 
 const app = express();
+app.use(cors());
 module.exports = app; // for testing
 app.use(bodyParser({limit: '5mb'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(passport.initialize());
-app.use(cors());
+
 
 
 
